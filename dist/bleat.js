@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool
- * Version: 0.0.6
+ * Version: 0.0.7
  *
  * The MIT License (MIT)
  *
@@ -128,6 +128,9 @@
 
     // Main Module
     return {
+        raiseError: function(msg) {
+            if (onError) onError(msg);
+        },
         addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
