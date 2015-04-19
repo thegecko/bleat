@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.1
+ * Version: 0.0.2
  *
  * The MIT License (MIT)
  *
@@ -41,30 +41,27 @@
 }(this, function(root, bleat) {
     "use strict";
 
-    // https://developer.chrome.com/apps/bluetoothLowEnergy
-    bleat.addAdapter("chromeos", (function() {
-        function checkForError(errorFn, continueFn) {
-            return function() {
-                if (chrome.runtime.lastError) {
-                    errorFn(chrome.runtime.lastError.message);
-                    return;
-                }
-                if (typeof continueFn === "function") {
-                    var args = [].slice.call(arguments);
-                    continueFn.apply(this, args);
-                }
-            };
-        }
+    function checkForError(errorFn, continueFn) {
+        return function() {
+            if (chrome.runtime.lastError) {
+                errorFn(chrome.runtime.lastError.message);
+                return;
+            }
+            if (typeof continueFn === "function") {
+                var args = [].slice.call(arguments);
+                continueFn.apply(this, args);
+            }
+        };
+    }
 
-        return {
+    // https://developer.chrome.com/apps/bluetoothLowEnergy
+    if (root.chrome && root.chrome.bluetooth && root.chrome.bluetoothLowEnergy) {
+
+        bleat.addAdapter("chromeos", {
             charNotifies: {},
             deviceDisconnects: {},
             foundFn: null,
             init: function(readyFn, errorFn) {
-                if (!root.chrome || !root.chrome.bluetooth || !root.chrome.bluetoothLowEnergy) {
-                    errorFn("chrome ble not found");
-                    return;
-                }
                 chrome.bluetooth.getAdapterState(checkForError(errorFn, function(adapterInfo) {
                     chrome.bluetooth.onDeviceAdded.addListener(function(deviceInfo) {
                         if (this.foundFn) {
@@ -169,6 +166,6 @@
             writeDescriptor: function(descriptor, bufferView, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.writeDescriptorValue(descriptor.handle, bufferView.buffer, checkForError(errorFn, completeFn));
             }
-        };
-    })());
+        });
+    }
 }));

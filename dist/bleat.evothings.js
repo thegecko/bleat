@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.1
+ * Version: 0.0.2
  *
  * The MIT License (MIT)
  *
@@ -43,76 +43,73 @@
 
     var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
 
-    // https://github.com/evothings/cordova-ble/blob/master/ble.js
-    bleat.addAdapter("evothings", (function() {
-        function arrayToUUID(array, offset) {
-            var uuid = "";
-            var pointer = 0;
-            [4, 2, 2, 2, 6].forEach(function(length) {
-                uuid += '-';
-                for (var i = 0; i < length; i++, pointer++) {
-                    uuid += evothings.util.toHexString(array[offset + pointer], 1);
-                }
-            });
-            return uuid.substr(1);
-        }
-
-        function parseAdvert(deviceInfo) {
-            var advert = {
-                name: deviceInfo.name,
-                serviceUUIDs: []
-            };
-
-            if (deviceInfo.advertisementData) {
-                if (deviceInfo.advertisementData.kCBAdvDataLocalName) advert.name = deviceInfo.advertisementData.kCBAdvDataLocalName;
-                if (deviceInfo.advertisementData.kCBAdvDataServiceUUIDs) {
-                    deviceInfo.advertisementData.kCBAdvDataServiceUUIDs.forEach(function(serviceUUID) {
-                        if (serviceUUID.length > 8) advert.serviceUUIDs.push(serviceUUID.toLowerCase());
-                        else advert.serviceUUIDs.push(("0000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
-                    });
-                }
-            } else if (deviceInfo.scanRecord) {
-
-                var byteArray = evothings.util.base64DecToArr(device.scanRecord);
-                var pos = 0;
-                while (pos < byteArray.length) {
-
-                    var length = byteArray[pos++];
-                    if (length === 0) break;
-                    length -= 1;
-                    var type = byteArray[pos++];
-                    var i;
-
-                    if (type == 0x02 || type == 0x03) { // 16-bit Service Class UUIDs
-                        for (i = 0; i < length; i += 2) {
-                            advert.serviceUUIDs.push("0000" + evothings.util.toHexString(evothings.util.littleEndianToUint16(byteArray, pos + i), 2) + BLUETOOTH_BASE_UUID);
-                        }
-                    } else if (type == 0x04 || type == 0x05) { // 32-bit Service Class UUIDs
-                        for (i = 0; i < length; i += 4) {
-                            advert.serviceUUIDs.push(evothings.util.toHexString(evothings.util.littleEndianToUint32(byteArray, pos + i), 4) + BLUETOOTH_BASE_UUID);
-                        }
-                    } else if (type == 0x06 || type == 0x07) { // 128-bit Service Class UUIDs
-                        for (i = 0; i < length; i += 4) {
-                            advert.serviceUUIDs.push(arrayToUUID(byteArray, pos + i));
-                        }
-                    } else if (type == 0x08 || type == 0x09) { // Local Name
-                        advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length));
-                    }
-                    pos += length;
-                }
+    function arrayToUUID(array, offset) {
+        var uuid = "";
+        var pointer = 0;
+        [4, 2, 2, 2, 6].forEach(function(length) {
+            uuid += '-';
+            for (var i = 0; i < length; i++, pointer++) {
+                uuid += evothings.util.toHexString(array[offset + pointer], 1);
             }
-            return advert;
-        }
+        });
+        return uuid.substr(1);
+    }
 
-        return {
+    function parseAdvert(deviceInfo) {
+        var advert = {
+            name: deviceInfo.name,
+            serviceUUIDs: []
+        };
+
+        if (deviceInfo.advertisementData) {
+            if (deviceInfo.advertisementData.kCBAdvDataLocalName) advert.name = deviceInfo.advertisementData.kCBAdvDataLocalName;
+            if (deviceInfo.advertisementData.kCBAdvDataServiceUUIDs) {
+                deviceInfo.advertisementData.kCBAdvDataServiceUUIDs.forEach(function(serviceUUID) {
+                    if (serviceUUID.length > 8) advert.serviceUUIDs.push(serviceUUID.toLowerCase());
+                    else advert.serviceUUIDs.push(("0000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
+                });
+            }
+        } else if (deviceInfo.scanRecord) {
+
+            var byteArray = evothings.util.base64DecToArr(device.scanRecord);
+            var pos = 0;
+            while (pos < byteArray.length) {
+
+                var length = byteArray[pos++];
+                if (length === 0) break;
+                length -= 1;
+                var type = byteArray[pos++];
+                var i;
+
+                if (type == 0x02 || type == 0x03) { // 16-bit Service Class UUIDs
+                    for (i = 0; i < length; i += 2) {
+                        advert.serviceUUIDs.push("0000" + evothings.util.toHexString(evothings.util.littleEndianToUint16(byteArray, pos + i), 2) + BLUETOOTH_BASE_UUID);
+                    }
+                } else if (type == 0x04 || type == 0x05) { // 32-bit Service Class UUIDs
+                    for (i = 0; i < length; i += 4) {
+                        advert.serviceUUIDs.push(evothings.util.toHexString(evothings.util.littleEndianToUint32(byteArray, pos + i), 4) + BLUETOOTH_BASE_UUID);
+                    }
+                } else if (type == 0x06 || type == 0x07) { // 128-bit Service Class UUIDs
+                    for (i = 0; i < length; i += 4) {
+                        advert.serviceUUIDs.push(arrayToUUID(byteArray, pos + i));
+                    }
+                } else if (type == 0x08 || type == 0x09) { // Local Name
+                    advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length));
+                }
+                pos += length;
+            }
+        }
+        return advert;
+    }
+
+    // https://github.com/evothings/cordova-ble/blob/master/ble.js
+    if (root.evothings || root.cordova) {
+
+        bleat.addAdapter("evothings", {
             deviceHandles: {},
             characteristicHandles: {},
             descriptorHandles: {},
             init: function(readyFn, errorFn) {
-                if (!root.evothings && !root.cordova) {
-                    errorFn("evothings not found");
-                    return;
-                }
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
             },
@@ -185,6 +182,6 @@
             writeDescriptor: function(descriptor, bufferView, completeFn, errorFn) {
                 evothings.ble.writeDescriptor(this.descriptorHandles[descriptor.handle], descriptor.handle, bufferView, completeFn, errorFn);
             }
-        };
-    })());
+        });
+    }
 }));
