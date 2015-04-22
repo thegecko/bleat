@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.2
+ * Version: 0.0.3
  *
  * The MIT License (MIT)
  *
@@ -43,13 +43,50 @@
 
     var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
 
+    // Advert parsing from https://github.com/evothings/evothings-examples/blob/master/resources/libs/evothings/easyble/easyble.js
+    function b64ToUint6(nChr) {
+        return nChr > 64 && nChr < 91 ? nChr - 65
+            : nChr > 96 && nChr < 123 ? nChr - 71
+            : nChr > 47 && nChr < 58 ? nChr + 4
+            : nChr === 43 ? 62
+            : nChr === 47 ? 63
+            : 0;
+    }
+
+    function base64DecToArr(sBase64, nBlocksSize) {
+        var sB64Enc = sBase64.replace(/[^A-Za-z0-9\+\/]/g, "");
+        var nInLen = sB64Enc.length;
+        var nOutLen = nBlocksSize ? Math.ceil((nInLen * 3 + 1 >> 2) / nBlocksSize) * nBlocksSize : nInLen * 3 + 1 >> 2;
+        var taBytes = new Uint8Array(nOutLen);
+
+        for (var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++) {
+            nMod4 = nInIdx & 3;
+            nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << 18 - 6 * nMod4;
+            if (nMod4 === 3 || nInLen - nInIdx === 1) {
+                for (nMod3 = 0; nMod3 < 3 && nOutIdx < nOutLen; nMod3++, nOutIdx++) {
+                    taBytes[nOutIdx] = nUint24 >>> (16 >>> nMod3 & 24) & 255;
+                }
+                nUint24 = 0;
+            }
+        }
+        return taBytes;
+    }
+
+    function littleEndianToUint16(data, offset) {
+        return (data[offset + 1] << 8) + data[offset];
+    }
+
+    function littleEndianToUint32(data, offset) {
+        return (data[offset + 3] << 24) + (data[offset + 2] << 16) + (data[offset + 1] << 8) + data[offset];
+    }
+
     function arrayToUUID(array, offset) {
         var uuid = "";
         var pointer = 0;
         [4, 2, 2, 2, 6].forEach(function(length) {
             uuid += '-';
             for (var i = 0; i < length; i++, pointer++) {
-                uuid += evothings.util.toHexString(array[offset + pointer], 1);
+                uuid += ("00" + array[offset + pointer].toString(16)).slice(-2);
             }
         });
         return uuid.substr(1);
@@ -66,12 +103,12 @@
             if (deviceInfo.advertisementData.kCBAdvDataServiceUUIDs) {
                 deviceInfo.advertisementData.kCBAdvDataServiceUUIDs.forEach(function(serviceUUID) {
                     if (serviceUUID.length > 8) advert.serviceUUIDs.push(serviceUUID.toLowerCase());
-                    else advert.serviceUUIDs.push(("0000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
+                    else advert.serviceUUIDs.push(("00000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
                 });
             }
         } else if (deviceInfo.scanRecord) {
 
-            var byteArray = evothings.util.base64DecToArr(device.scanRecord);
+            var byteArray = base64DecToArr(deviceInfo.scanRecord);
             var pos = 0;
             while (pos < byteArray.length) {
 
@@ -83,11 +120,11 @@
 
                 if (type == 0x02 || type == 0x03) { // 16-bit Service Class UUIDs
                     for (i = 0; i < length; i += 2) {
-                        advert.serviceUUIDs.push("0000" + evothings.util.toHexString(evothings.util.littleEndianToUint16(byteArray, pos + i), 2) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(("0000" + littleEndianToUint16(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
                     }
                 } else if (type == 0x04 || type == 0x05) { // 32-bit Service Class UUIDs
                     for (i = 0; i < length; i += 4) {
-                        advert.serviceUUIDs.push(evothings.util.toHexString(evothings.util.littleEndianToUint32(byteArray, pos + i), 4) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(("00000000" + littleEndianToUint32(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
                     }
                 } else if (type == 0x06 || type == 0x07) { // 128-bit Service Class UUIDs
                     for (i = 0; i < length; i += 4) {
