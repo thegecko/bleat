@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.2
+ * Version: 0.0.3
  *
  * The MIT License (MIT)
  *
@@ -147,9 +147,10 @@
             writeCharacteristic: function(characteristic, bufferView, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.writeCharacteristicValue(characteristic.handle, bufferView.buffer, checkForError(errorFn, completeFn));
             },
-            enableNotify: function(characteristic, notifyFn, errorFn) {
+            enableNotify: function(characteristic, notifyFn, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.startCharacteristicNotifications(characteristic.handle, null, checkForError(errorFn, function() {
                     this.charNotifies[characteristic.handle] = notifyFn;
+                    completeFn();
                 }));
             },
             disableNotify: function(characteristic, completeFn, errorFn) {

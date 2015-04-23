@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool
- * Version: 0.0.8
+ * Version: 0.0.9
  *
  * The MIT License (MIT)
  *
@@ -107,8 +107,8 @@
     Characteristic.prototype.write = function(bufferView, completeFn) {
         adapter.writeCharacteristic(this, bufferView, executeFn(completeFn), raiseError("write characteristic error"));
     };
-    Characteristic.prototype.enableNotify = function(notifyFn) {
-        adapter.enableNotify(this, executeFn(notifyFn), raiseError("enable notify error"));
+    Characteristic.prototype.enableNotify = function(notifyFn, completeFn) {
+        adapter.enableNotify(this, executeFn(notifyFn), executeFn(completeFn), raiseError("enable notify error"));
     };
     Characteristic.prototype.disableNotify = function(completeFn) {
         adapter.disableNotify(this, executeFn(completeFn), raiseError("disable notify error"));

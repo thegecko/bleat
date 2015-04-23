@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.3
+ * Version: 0.0.4
  *
  * The MIT License (MIT)
  *
@@ -42,8 +42,10 @@
     "use strict";
 
     var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
+    var CCCD_UUID = "00002902-0000-1000-8000-00805f9b34fb";
 
     // Advert parsing from https://github.com/evothings/evothings-examples/blob/master/resources/libs/evothings/easyble/easyble.js
+    // Should be encapsulated in the native Android implementation (see issue #62)
     function b64ToUint6(nChr) {
         return nChr > 64 && nChr < 91 ? nChr - 65
             : nChr > 96 && nChr < 123 ? nChr - 71
@@ -140,12 +142,15 @@
     }
 
     // https://github.com/evothings/cordova-ble/blob/master/ble.js
-    if (root.evothings || root.cordova) {
+    if (root.cordova) {
+
+        var platform = root.cordova.platformId;
 
         bleat.addAdapter("evothings", {
             deviceHandles: {},
             characteristicHandles: {},
             descriptorHandles: {},
+            notifyCallbacks: {},
             init: function(readyFn, errorFn) {
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
@@ -202,16 +207,39 @@
                 if (this.deviceHandles[device.address]) evothings.ble.close(this.deviceHandles[device.address]);
             },
             readCharacteristic: function(characteristic, completeFn, errorFn) {
-                evothings.ble.readCharacteristic(this.characteristicHandles[characteristic.handle], characteristic.handle, completeFn, errorFn);
+                evothings.ble.readCharacteristic(this.characteristicHandles[characteristic.handle], characteristic.handle, function(data) {
+                    // Re-enable notification on iOS if there was one, see issue #61
+                    if (platform === "ios" && this.notifyCallbacks[characteristic.uuid]) this.enableNotify(characteristic, this.notifyCallbacks[characteristic.uuid], null, errorFn);
+                    completeFn(data);
+                }.bind(this), errorFn);
             },
             writeCharacteristic: function(characteristic, bufferView, completeFn, errorFn) {
                 evothings.ble.writeCharacteristic(this.characteristicHandles[characteristic.handle], characteristic.handle, bufferView, completeFn, errorFn);
             },
-            enableNotify: function(characteristic, notifyFn, errorFn) {
-                evothings.ble.enableNotification(this.characteristicHandles[characteristic.handle], characteristic.handle, notifyFn, errorFn);
+            enableNotify: function(characteristic, notifyFn, completeFn, errorFn) {
+                var callbackFn = function() {
+                    evothings.ble.enableNotification(this.characteristicHandles[characteristic.handle], characteristic.handle, notifyFn, errorFn);
+                    if (platform === "ios") this.notifyCallbacks[characteristic.uuid] = notifyFn;
+                    if (completeFn) completeFn();
+                };
+                if (platform === "android") {
+                    // Android needs the CCCD descriptor written to for notifications
+                    // Should be encapsulated in native android layer (see issue #30)
+                    var descriptor = characteristic.descriptors[CCCD_UUID];
+                    if (!descriptor) {
+                        errorFn("cannot find notify descriptor");
+                        return;
+                    }
+                    this.writeDescriptor(descriptor, new Uint8Array([1, 0]), callbackFn.bind(this), errorFn);
+                } else callbackFn.call(this);
             },
             disableNotify: function(characteristic, completeFn, errorFn) {
                 evothings.ble.disableNotification(this.characteristicHandles[characteristic.handle], characteristic.handle, completeFn, errorFn);
+                if (platform === "ios") {
+                    delete this.notifyCallbacks[characteristic.uuid];
+                    // iOS doesn't call back after disable (see issue #65)
+                    completeFn();
+                }
             },
             readDescriptor: function(descriptor, completeFn, errorFn) {
                 evothings.ble.readDescriptor(this.descriptorHandles[descriptor.handle], descriptor.handle, completeFn, errorFn);
