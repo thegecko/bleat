@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.4
+ * Version: 0.0.5
  *
  * The MIT License (MIT)
  *
@@ -30,7 +30,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([root, 'bleat'], factory);
+        define(['bleat'], factory.bind(this, root));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
         module.exports = factory(root, require('bleat'));
@@ -133,7 +133,7 @@
                         advert.serviceUUIDs.push(arrayToUUID(byteArray, pos + i));
                     }
                 } else if (type == 0x08 || type == 0x09) { // Local Name
-                    advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length));
+                    advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length)).replace('\0', '');
                 }
                 pos += length;
             }

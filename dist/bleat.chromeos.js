@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.3
+ * Version: 0.0.4
  *
  * The MIT License (MIT)
  *
@@ -30,7 +30,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define([root, 'bleat'], factory);
+        define(['bleat'], factory.bind(this, root));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
         module.exports = factory(root, require('bleat'));
