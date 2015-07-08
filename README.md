@@ -11,24 +11,25 @@ Bleat (Blutooth Low Energy Abstraction Tool) provides a simplified BLE layer whi
 
 #### Basic BLE layer
 
-* ~~Central Mode~~
-    * ~~Device Scan~~
-    * ~~Advertised Service UUIDs~~
-    * ~~Connect/Disconnect~~
-    * ~~List Services/Characteristics/Descriptors~~
-    * ~~Read/Write/Notify Characteristics~~
-    * ~~Read/Write Descriptors~~
+* <del>Central Mode</del>
+    * <del>Device Scan</del>
+    * <del>Advertised Service UUIDs</del>
+    * <del>Connect/Disconnect</del>
+    * <del>List Services/Characteristics/Descriptors</del>
+    * <del>Read/Write/Notify Characteristics</del>
+    * <del>Read/Write Descriptors</del>
 * Peripheral Mode
     * Advertising
 
 #### Adapters
 
 * Central Mode
-    * ~~Evothings/Cordova/PhoneGap~~ https://github.com/evothings/cordova-ble/blob/master/ble.js
-    * ~~ChromeOS~~ https://developer.chrome.com/apps/bluetoothLowEnergy
-    * noble https://github.com/sandeepmistry/noble
+    * <del>Evothings/Cordova/PhoneGap</del> https://github.com/evothings/cordova-ble/blob/master/ble.js
+    * <del>ChromeOS</del> https://developer.chrome.com/apps/bluetoothLowEnergy
+    * <del>noble</del> https://github.com/sandeepmistry/noble
     * Web Bluetooth https://www.w3.org/community/web-bluetooth
 * Peripheral Mode
+    * bleno
     * Tessel
     * Espruino
 
