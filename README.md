@@ -7,31 +7,33 @@
 
 Bleat (Blutooth Low Energy Abstraction Tool) provides a simplified BLE layer which uses adapters to abstract the usage of BLE in JavaScript on different platforms.
 
-## Roadmap
+## Implemented
 
-#### Basic BLE layer
+* Central Mode
+    * Device Scan
+    * Advertised Service UUIDs
+    * Connect/Disconnect
+    * List Services/Characteristics/Descriptors
+    * Read/Write/Notify Characteristics
+    * Read/Write Descriptors
 
-* <del>Central Mode</del>
-    * <del>Device Scan</del>
-    * <del>Advertised Service UUIDs</del>
-    * <del>Connect/Disconnect</del>
-    * <del>List Services/Characteristics/Descriptors</del>
-    * <del>Read/Write/Notify Characteristics</del>
-    * <del>Read/Write Descriptors</del>
+* Central Adapters
+    * Android/iOS (using Evothings/Cordova/PhoneGap) https://github.com/evothings/cordova-ble/blob/master/ble.js
+    * Mac/Linux (using noble on Node.js) https://github.com/sandeepmistry/noble
+    * ChromeOS https://developer.chrome.com/apps/bluetoothLowEnergy
+
+## Roadmap (to be implemented)
+
+* Central Adapters
+    * Web (following Web Bluetooth) https://www.w3.org/community/web-bluetooth
+
 * Peripheral Mode
     * Advertising
 
-#### Adapters
-
-* Central Mode
-    * <del>Evothings/Cordova/PhoneGap</del> https://github.com/evothings/cordova-ble/blob/master/ble.js
-    * <del>ChromeOS</del> https://developer.chrome.com/apps/bluetoothLowEnergy
-    * <del>noble</del> https://github.com/sandeepmistry/noble
-    * Web Bluetooth https://www.w3.org/community/web-bluetooth
-* Peripheral Mode
-    * bleno
-    * Tessel
-    * Espruino
+* Peripheral Adapters
+    * Mac/Linux (using bleno on Node.js) https://github.com/sandeepmistry/bleno
+    * Tessel https://tessel.io/modules#module-ble
+    * Espruino http://www.espruino.com/Bluetooth
 
 ## Installation
 
@@ -43,20 +45,33 @@ bower install bleat
 
 ## Usage
 
-The main `bleat.js` file offers the BLE layer while each `bleat.<platform>.js` file represents an adapter.
+The main `bleat.core.js` file offers the BLE layer while each `bleat.<platform>.js` file represents an adapter.
+The `bleat.js` file contains the BLE layer and all adapters concatenated together (not minified).
 The `bleat.min.js` file is a minified version of the BLE layer and all adapters.
 
 Files follow the UMD (https://github.com/umdjs/umd), so should work with AMD (requirejs), CommonJS (node) and plain JavaScript projects.
 
-Include (or require) the `bleat.js` file before the adapter you wish to use or include the minified file offering all adapters.
+Refer to the `example_<adapter>` files for simple examples.
+
+### Plain JavaScript (globals)
+
+Include (or require) the `bleat.core.js` file before the adapter you wish to use or include the minified file offering all adapters.
 
 e.g.
 
 ```
-<script src="path/to/bleat.js"></script>
+<script src="path/to/bleat.core.js"></script>
 <script src="path/to/bleat.<adapter>.js"></script>
       -or-
 <script src="path/to/bleat.min.js"></script>
+```
+
+### Node.js
+
+Simply require it up!
+
+```
+var bleat = require('bleat');
 ```
 
 ## API
