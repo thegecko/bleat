@@ -195,10 +195,12 @@ function completeFn(): callback function once completed
 Enable notifications when characteristic value changes.
 
 ```
-void characteristic.enableNotify(notifyFn);
+void characteristic.enableNotify(notifyFn, completeFn);
 ```
 
 function notifyFn(ArrayBuffer): callback function containing value when changes
+
+function completeFn(): callback function once completed
 
 #### characteristic.disableNotify
 
