@@ -1,10 +1,11 @@
 {
   "name": "bleat",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Abstraction library for hiding differences in JavaScript BLE APIs",
   "homepage": "https://github.com/thegecko/bleat",
   "author": "Rob Moran <rob@thegecko.org>",
   "license": "MIT",
+  "main": "./index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/thegecko/bleat.git"
@@ -15,9 +16,13 @@
     "bluetooth",
     "abstraction"
   ],
+  "optionalDependencies": {
+    "noble": "^1.0.1"
+  },
   "devDependencies": {
     "gulp": "^3.8.7",
     "gulp-jshint": "^1.9.0",
+    "gulp-concat": "^2.6.0",
     "gulp-uglifyjs": "^0.5.0"
   }
 }

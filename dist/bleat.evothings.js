@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.5
+ * Version: 0.0.6
  *
  * The MIT License (MIT)
  *
@@ -33,7 +33,7 @@
         define(['bleat'], factory.bind(this, root));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory(root, require('bleat'));
+        module.exports = factory(root, require('./bleat.core'));
     } else {
         // Browser globals with support for web workers (root is window)
         factory(root, root.bleat);

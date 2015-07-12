@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.4
+ * Version: 0.0.5
  *
  * The MIT License (MIT)
  *
@@ -33,7 +33,7 @@
         define(['bleat'], factory.bind(this, root));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory(root, require('bleat'));
+        module.exports = factory(root, require('./bleat.core'));
     } else {
         // Browser globals with support for web workers (root is window)
         factory(root, root.bleat);
@@ -63,23 +63,25 @@
             foundFn: null,
             init: function(readyFn, errorFn) {
                 chrome.bluetooth.getAdapterState(checkForError(errorFn, function(adapterInfo) {
-                    chrome.bluetooth.onDeviceAdded.addListener(function(deviceInfo) {
-                        if (this.foundFn) {
-                            var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
-                            this.foundFn(device);
-                        }
-                    });
-                    chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(characteristicInfo) {
-                        if (typeof this.charNotifies[characteristicInfo.instanceId] === "function") {
-                            this.charNotifies[characteristicInfo.instanceId](characteristicInfo.value);
-                            delete this.charNotifies[characteristicInfo.instanceId];
-                        }
-                    });
-                    chrome.bluetooth.onDeviceRemoved.addListener(this.checkDisconnect);
-                    chrome.bluetooth.onDeviceChanged.addListener(function(deviceInfo) {
-                        if (deviceInfo.connected === false) checkDisconnect(deviceInfo);
-                    });
-                    if (adapterInfo.available) readyFn();
+                    if (adapterInfo.available) {
+                        chrome.bluetooth.onDeviceAdded.addListener(function(deviceInfo) {
+                            if (this.foundFn) {
+                                var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
+                                this.foundFn(device);
+                            }
+                        });
+                        chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(characteristicInfo) {
+                            if (typeof this.charNotifies[characteristicInfo.instanceId] === "function") {
+                                this.charNotifies[characteristicInfo.instanceId](characteristicInfo.value);
+                                delete this.charNotifies[characteristicInfo.instanceId];
+                            }
+                        });
+                        chrome.bluetooth.onDeviceRemoved.addListener(this.checkDisconnect);
+                        chrome.bluetooth.onDeviceChanged.addListener(function(deviceInfo) {
+                            if (deviceInfo.connected === false) checkDisconnect(deviceInfo);
+                        });
+                        readyFn();
+                    }
                     else errorFn("adapter not enabled");
                 }));
             },

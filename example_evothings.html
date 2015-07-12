@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="format-detection" content="telephone=no" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>bleat</title>
+</head>
+<body>
+
+	<div id="status"></div>
+
+	<script src="cordova.js"></script>
+	<script src="dist/bleat.core.js"></script>
+	<script src="dist/bleat.evothings.js"></script>
+
+	<script>
+		// Redirect console.log to Evothings Workbench
+		if (window.hyper && window.hyper.log) { console.log = hyper.log; }
+
+		var statusEl = document.getElementById("status");
+
+		function logStatus(message) {
+			console.log(message);
+			statusEl.innerText += message + "\n";
+		}
+
+		bleat.init(function() {
+			logStatus("bluetooth ready");
+			bleat.startScan(function(device) {
+
+				bleat.stopScan();
+				logStatus("found device: " + device.name);
+
+				device.connect(function() {
+					logStatus("connected to: " + device.name);
+
+					Object.keys(device.services).forEach(function(serviceID) {
+						var service = device.services[serviceID];
+						logStatus("found service: " + service.uuid + " (with " + Object.keys(service.characteristics).length + " characteristics)");
+					});
+
+					device.disconnect();
+					logStatus("disconnected from: " + device.name);
+				});
+			});
+		}, logStatus);
+	</script>
+
+</body>
+</html>
