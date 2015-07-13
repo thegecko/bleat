@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality
- * Version: 0.0.11
+ * Version: 0.0.12
  *
  * The MIT License (MIT)
  *

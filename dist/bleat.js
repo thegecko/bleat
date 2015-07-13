@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality
- * Version: 0.0.11
+ * Version: 0.0.12
  *
  * The MIT License (MIT)
  *
@@ -162,7 +162,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.5
+ * Version: 0.0.6
  *
  * The MIT License (MIT)
  *
@@ -230,21 +230,21 @@
                                 var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
                                 this.foundFn(device);
                             }
-                        });
+                        }.bind(this));
                         chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(characteristicInfo) {
                             if (typeof this.charNotifies[characteristicInfo.instanceId] === "function") {
                                 this.charNotifies[characteristicInfo.instanceId](characteristicInfo.value);
                                 delete this.charNotifies[characteristicInfo.instanceId];
                             }
-                        });
-                        chrome.bluetooth.onDeviceRemoved.addListener(this.checkDisconnect);
+                        }.bind(this));
+                        chrome.bluetooth.onDeviceRemoved.addListener(this.checkDisconnect.bind(this));
                         chrome.bluetooth.onDeviceChanged.addListener(function(deviceInfo) {
-                            if (deviceInfo.connected === false) checkDisconnect(deviceInfo);
-                        });
+                            if (deviceInfo.connected === false) this.checkDisconnect(deviceInfo);
+                        }.bind(this));
                         readyFn();
                     }
                     else errorFn("adapter not enabled");
-                }));
+                }.bind(this)));
             },
             checkDisconnect: function(deviceInfo) {
                 if (typeof this.deviceDisconnects[deviceInfo.address] === "function") {
@@ -265,10 +265,11 @@
             },
             stop: function(errorFn) {
                 this.foundFn = null;
-                chrome.bluetooth.stopDiscovery(checkForError(errorFn));
+                if (chrome.bluetooth.discovering) chrome.bluetooth.stopDiscovery(checkForError(errorFn));
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
-                chrome.bluetoothLowEnergy.connect(device.address, null, checkForError(errorFn, function() {
+                chrome.bluetoothLowEnergy.connect(device.address, checkForError(errorFn, function() {
+
                     this.deviceDisconnects[device.address] = function() {
                         device.connected = false;
                         device.services = {};
@@ -280,13 +281,12 @@
                         services.forEach(function(serviceInfo) {
                             var service = new bleat.Service(serviceInfo.uuid, serviceInfo.instanceId, serviceInfo.isPrimary);
                             device.services[service.uuid] = service;
-
-                            chrome.bluetoothLowEnergy.getCharacteristics(service.handle, checkForError(errorFn, function(characteristics) {
+                            chrome.bluetoothLowEnergy.getCharacteristics(serviceInfo.instanceId, checkForError(errorFn, function(characteristics) {
                                 characteristics.forEach(function(characteristicInfo) {
                                     var characteristic = new bleat.Characteristic(characteristicInfo.uuid, characteristicInfo.instanceId, characteristicInfo.properties);
                                     service.characteristics[characteristic.uuid] = characteristic;
 
-                                    chrome.bluetoothLowEnergy.getDescriptors(characteristic.handle, checkForError(errorFn, function(descriptors) {
+                                    chrome.bluetoothLowEnergy.getDescriptors(characteristicInfo.instanceId, checkForError(errorFn, function(descriptors) {
                                         descriptors.forEach(function(descriptorInfo) {
                                             var descriptor = new bleat.Descriptor(descriptorInfo.uuid, descriptorInfo.instanceId);
                                             characteristic.descriptors[descriptor.uuid] = descriptor;
@@ -297,7 +297,7 @@
                         });
                         setTimeout(connectFn, 0);
                     }));
-                }));
+                }.bind(this)));
             },
             disconnect: function(device, errorFn) {
                 chrome.bluetoothLowEnergy.disconnect(device.address, checkForError(errorFn));
@@ -314,13 +314,13 @@
                 chrome.bluetoothLowEnergy.startCharacteristicNotifications(characteristic.handle, null, checkForError(errorFn, function() {
                     this.charNotifies[characteristic.handle] = notifyFn;
                     completeFn();
-                }));
+                }.bind(this)));
             },
             disableNotify: function(characteristic, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.stopCharacteristicNotifications(characteristic.handle, checkForError(errorFn, function() {
                     if (this.charNotifies[characteristic.handle]) delete this.charNotifies[characteristic.handle];
                     completeFn();
-                }));
+                }.bind(this)));
             },
             readDescriptor: function(descriptor, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.readDescriptorValue(descriptor.handle, checkForError(errorFn, function(descriptorInfo) {
