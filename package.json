@@ -1,6 +1,6 @@
 {
   "name": "bleat",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Abstraction library for hiding differences in JavaScript BLE APIs",
   "homepage": "https://github.com/thegecko/bleat",
   "author": "Rob Moran <rob@thegecko.org>",

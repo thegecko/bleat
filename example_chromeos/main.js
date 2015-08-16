@@ -17,7 +17,17 @@ bleat.init(function() {
 
 			Object.keys(device.services).forEach(function(serviceID) {
 				var service = device.services[serviceID];
-				logStatus("found service: " + service.uuid + " (with " + Object.keys(service.characteristics).length + " characteristics)");
+				logStatus("\nservice: " + service.uuid);
+
+				Object.keys(service.characteristics).forEach(function(characteristicID) {
+					var characteristic = service.characteristics[characteristicID];
+					logStatus("\t└characteristic: " + characteristic.uuid);
+
+					Object.keys(characteristic.descriptors).forEach(function(descriptorID) {
+						var descriptor = characteristic.descriptors[descriptorID];
+						logStatus("\t\t└descriptor: " + descriptor.uuid);
+					});
+				});
 			});
 
 			device.disconnect();

@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality
- * Version: 0.0.12
+ * Version: 0.0.13
  *
  * The MIT License (MIT)
  *
@@ -152,6 +152,35 @@
         },
         stopScan: function() {
             adapter.stop(raiseError("stop scan error"));
+        },
+        asyncWait: function(finishFn, errorFn) {
+            var count = 0;
+            var callbackAdded = false;
+            this.addCallback = function(fn) {
+                count++;
+                callbackAdded = true;
+                return function() {
+                    if (fn) {
+                        fn.apply(null, arguments);
+                    }
+                    if (--count == 0 && finishFn) {
+                        finishFn();
+                    }
+                }
+            };
+            this.error = function() {
+                if (errorFn) {
+                    errorFn.apply(null, arguments);
+                }
+                if (--count == 0 && finishFn) {
+                    finishFn();
+                }
+            };
+            this.finish = function() {
+                if (!callbackAdded && finishFn) {
+                    finishFn();
+                }
+            };
         },
         Device: Device,
         Service: Service,
