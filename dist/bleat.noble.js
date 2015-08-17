@@ -106,14 +106,14 @@
                         services.forEach(function(serviceInfo) {
 
                             var serviceUUID = expandUUID(serviceInfo.uuid);
-                            var service = new bleat.Service(serviceUUID, serviceUUID, false);
+                            var service = new bleat.Service(serviceUUID, serviceInfo.uuid, false);
                             device.services[service.uuid] = service;
 
                             serviceInfo.discoverCharacteristics([], wait.addCallback(checkForError(errorFn, function(characteristics) {
                                 characteristics.forEach(function(characteristicInfo) {
 
                                     var charUUID = expandUUID(characteristicInfo.uuid);
-                                    var characteristic = new bleat.Characteristic(charUUID, charUUID, characteristicInfo.properties);
+                                    var characteristic = new bleat.Characteristic(charUUID, characteristicInfo.uuid, characteristicInfo.properties);
                                     service.characteristics[characteristic.uuid] = characteristic;
                                     this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
 
