@@ -30,7 +30,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['bleat'], factory.bind(this, root));
+        define(['bleat.core'], factory.bind(this, root));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
         module.exports = factory(root, require('./bleat.core'));

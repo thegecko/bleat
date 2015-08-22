@@ -30,7 +30,7 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['noble', 'bleat'], factory);
+        define(['noble', 'bleat.core'], factory);
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
         module.exports = factory(require('noble'), require('./bleat.core'));
