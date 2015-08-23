@@ -30,8 +30,8 @@ bleat.init(function() {
 			});
 
 			device.disconnect();
+		}, function() {
 			logStatus("\ndisconnected from: " + device.name);
-
 			process.exit();
 		});
 	});

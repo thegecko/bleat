@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: noble adapter
- * Version: 0.0.2
+ * Version: 0.0.3
  *
  * The MIT License (MIT)
  *
@@ -62,6 +62,7 @@
         bleat.addAdapter("noble", {
             foundFn: null,
             deviceHandles: {},
+            serviceHandles: {},
             characteristicHandles: {},
             descriptorHandles: {},
             charNotifies: {},
@@ -96,97 +97,98 @@
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
                 var baseDevice = this.deviceHandles[device.address];
-                var wait = new bleat.asyncWait(function() {
-                    device.connected = true;
-                    connectFn();
-                });
-                baseDevice.once("connect", function() {
-
-                    baseDevice.discoverServices([], checkForError(errorFn, function(services) {
-                        services.forEach(function(serviceInfo) {
-
-                            var serviceUUID = expandUUID(serviceInfo.uuid);
-                            var service = new bleat.Service(serviceUUID, serviceInfo.uuid, false);
-                            device.services[service.uuid] = service;
-
-                            serviceInfo.discoverCharacteristics([], wait.addCallback(checkForError(errorFn, function(characteristics) {
-                                characteristics.forEach(function(characteristicInfo) {
-
-                                    var charUUID = expandUUID(characteristicInfo.uuid);
-                                    var characteristic = new bleat.Characteristic(charUUID, characteristicInfo.uuid, characteristicInfo.properties);
-                                    service.characteristics[characteristic.uuid] = characteristic;
-                                    this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
-
-                                    characteristicInfo.on('read', function(data, isNotification) {
-                                        if (isNotification === true && typeof this.charNotifies[charUUID] === "function") {
-                                            var arrayBuffer = new Uint8Array(data).buffer;
-                                            this.charNotifies[charUUID](arrayBuffer);
-                                        }
-                                    }.bind(this));
-
-                                    characteristicInfo.discoverDescriptors(wait.addCallback(checkForError(errorFn, function(descriptors) {
-                                        descriptors.forEach(function(descriptorInfo) {
-
-                                            var descUUID = expandUUID(descriptorInfo.uuid);
-                                            var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
-                                            var descriptor = new bleat.Descriptor(descUUID, descHandle);
-                                            characteristic.descriptors[descUUID] = descriptor;
-                                            this.descriptorHandles[descHandle] = descriptorInfo;
-
-                                        }, this);
-                                    }.bind(this))));
-                                }, this);
-                            }.bind(this))));
-                            wait.finish();
-                        }, this);
-                    }.bind(this)));
-                }.bind(this));
-
-                baseDevice.once("disconnect", function() {
-                    device.connected = false;
-                    disconnectFn();
-                }.bind(this));
-
+                baseDevice.once("connect", connectFn);
+                baseDevice.once("disconnect", disconnectFn);
                 baseDevice.connect(checkForError(errorFn));
             },
             disconnect: function(device, errorFn) {
                 this.deviceHandles[device.address].disconnect(checkForError(errorFn));
             },
+            discoverServices: function(device, completeFn, errorFn) {
+                var baseDevice = this.deviceHandles[device.address];
+                baseDevice.discoverServices([], checkForError(errorFn, function(services) {
+                    services.forEach(function(serviceInfo) {
+
+                        this.serviceHandles[serviceInfo.uuid] = serviceInfo;
+                        var serviceUUID = expandUUID(serviceInfo.uuid);
+                        var service = new bleat.Service(serviceInfo.uuid, serviceUUID, false);
+                        device.services[service.uuid] = service;
+
+                    }, this);
+                    completeFn();
+                }.bind(this)));
+            },
+            discoverCharacteristics: function(service, completeFn, errorFn) {
+                var serviceInfo = this.serviceHandles[service._handle];
+                serviceInfo.discoverCharacteristics([], checkForError(errorFn, function(characteristics) {
+                    characteristics.forEach(function(characteristicInfo) {
+
+                        this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
+                        var charUUID = expandUUID(characteristicInfo.uuid);
+                        var characteristic = new bleat.Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
+                        service.characteristics[characteristic.uuid] = characteristic;
+
+                        characteristicInfo.on('read', function(data, isNotification) {
+                            if (isNotification === true && typeof this.charNotifies[charUUID] === "function") {
+                                var arrayBuffer = new Uint8Array(data).buffer;
+                                this.charNotifies[charUUID](arrayBuffer);
+                            }
+                        }.bind(this));
+
+                    }, this);
+                    completeFn();
+                }.bind(this)));
+            },
+            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+                var characteristicInfo = this.characteristicHandles[characteristic._handle];
+                characteristicInfo.discoverDescriptors(checkForError(errorFn, function(descriptors) {
+                    descriptors.forEach(function(descriptorInfo) {
+
+                        var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
+                        this.descriptorHandles[descHandle] = descriptorInfo;
+                        var descUUID = expandUUID(descriptorInfo.uuid);
+                        var descriptor = new bleat.Descriptor(descHandle, descUUID);
+                        characteristic.descriptors[descUUID] = descriptor;
+
+                    }, this);
+                    completeFn();
+                }.bind(this)));
+            },
             readCharacteristic: function(characteristic, completeFn, errorFn) {
-                this.characteristicHandles[characteristic.handle].read(checkForError(errorFn, function(data) {
+                this.characteristicHandles[characteristic._handle].read(checkForError(errorFn, function(data) {
                     var arrayBuffer = new Uint8Array(data).buffer;
                     completeFn(arrayBuffer);
                 }));
             },
             writeCharacteristic: function(characteristic, bufferView, completeFn, errorFn) {
                 var buffer = new Buffer(new Uint8Array(bufferView.buffer));
-                this.characteristicHandles[characteristic.handle].write(buffer, true, checkForError(errorFn, completeFn));
+                this.characteristicHandles[characteristic._handle].write(buffer, true, checkForError(errorFn, completeFn));
             },
             enableNotify: function(characteristic, notifyFn, completeFn, errorFn) {
-                this.characteristicHandles[characteristic.handle].once("notify", function(state) {
+                this.characteristicHandles[characteristic._handle].once("notify", function(state) {
                     if (state !== true) return errorFn("notify failed to enable");
                     this.charNotifies[characteristic.uuid] = notifyFn;
                     completeFn();
                 }.bind(this));
-                this.characteristicHandles[characteristic.handle].notify(true, checkForError(errorFn));
+                this.characteristicHandles[characteristic._handle].notify(true, checkForError(errorFn));
             },
             disableNotify: function(characteristic, completeFn, errorFn) {
-                this.characteristicHandles[characteristic.handle].once("notify", function(state) {
+                this.characteristicHandles[characteristic._handle].once("notify", function(state) {
                     if (state !== false) return errorFn("notify failed to disable");
                     if (this.charNotifies[characteristic.uuid]) delete this.charNotifies[characteristic.uuid];
                     completeFn();
                 }.bind(this));
-                this.characteristicHandles[characteristic.handle].notify(false, checkForError(errorFn));
+                this.characteristicHandles[characteristic._handle].notify(false, checkForError(errorFn));
             },
             readDescriptor: function(descriptor, completeFn, errorFn) {
-                this.descriptorHandles[descriptor.handle].readValue(checkForError(errorFn, function(data) {
+                this.descriptorHandles[descriptor._handle].readValue(checkForError(errorFn, function(data) {
                     var arrayBuffer = new Uint8Array(data).buffer;
                     completeFn(arrayBuffer);                    
                 }));
             },
             writeDescriptor: function(descriptor, bufferView, completeFn, errorFn) {
                 var buffer = new Buffer(new Uint8Array(bufferView.buffer));
-                this.descriptorHandles[descriptor.handle].writeValue(buffer, checkForError(errorFn, completeFn));
+                this.descriptorHandles[descriptor._handle].writeValue(buffer, checkForError(errorFn, completeFn));
             }
         });
     }

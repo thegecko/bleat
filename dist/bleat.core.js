@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality
- * Version: 0.0.13
+ * Version: 0.0.14
  *
  * The MIT License (MIT)
  *
@@ -61,12 +61,28 @@
         };
     }
 
+    function AsyncWait(finishFn) {
+        var count = 0;
+        var callbackAdded = false;
+        this.addCallback = function(fn) {
+            count++;
+            callbackAdded = true;
+            return function() {
+                if (fn) fn.apply(null, arguments);
+                if (--count === 0 && finishFn) finishFn();
+            };
+        };
+        this.finish = function() {
+            if (!callbackAdded && finishFn) finishFn();
+        };
+    }
+
     // Device Object
     var Device = function(address, name, serviceUUIDs) {
         this.address = address;
         this.name = name;
-        this.connected = false;
         this.serviceUUIDs = serviceUUIDs;
+        this.connected = false;
         this.services = {};
     };
     Device.prototype.hasService = function(serviceUUID) {
@@ -79,25 +95,60 @@
         });
         return found;
     };
-    Device.prototype.connect = function(connectFn, disconnectFn) {
-        adapter.connect(this, executeFn(connectFn), executeFn(disconnectFn), raiseError("connect error"));
+    Device.prototype.connect = function(connectFn, disconnectFn, suppressDiscovery) {
+        adapter.connect(this, function() {
+            this.connected = true;
+            if (suppressDiscovery) return executeFn(connectFn)();
+            this.discoverAll(connectFn);
+        }.bind(this), function() {
+            this.connected = false;
+            this.services = {};
+            executeFn(disconnectFn)();
+        }.bind(this), raiseError("connect error"));
     };
     Device.prototype.disconnect = function() {
         adapter.disconnect(this, raiseError("disconnect error"));
     };
+    Device.prototype.discoverServices = function(completeFn) {
+        if (this.connected === false) return raiseError("discovery error")("device not connected");
+        adapter.discoverServices(this, executeFn(completeFn), raiseError("service discovery error"));
+    };
+    Device.prototype.discoverAll = function(completeFn) {
+        if (this.connected === false) return raiseError("discovery error")("device not connected");
+        var wait = new AsyncWait(completeFn);
+
+        this.discoverServices(wait.addCallback(function() {
+            Object.keys(this.services).forEach(function(serviceUUID) {
+                var service = this.services[serviceUUID];
+
+                service.discoverCharacteristics(wait.addCallback(function() {
+                    Object.keys(service.characteristics).forEach(function(characteristicUUID) {
+                        var characteristic = service.characteristics[characteristicUUID];
+                        characteristic.discoverDescriptors(wait.addCallback());
+                    }, this);
+                }.bind(this)));
+
+            }, this);
+        }.bind(this)));
+
+        wait.finish();
+    };
 
     // Service Object
-    var Service = function(uuid, handle, primary) {
+    var Service = function(handle, uuid, primary) {
+        this._handle = handle;
         this.uuid = uuid;
-        this.handle = handle;
         this.primary = primary;
         this.characteristics = {};
     };
+    Service.prototype.discoverCharacteristics = function(completeFn) {
+        adapter.discoverCharacteristics(this, executeFn(completeFn), raiseError("characteristic discovery error"));
+    };
 
     // Characteristic Object
-    var Characteristic = function(uuid, handle, properties) {
+    var Characteristic = function(handle, uuid, properties) {
+        this._handle = handle;
         this.uuid = uuid;
-        this.handle = handle;
         this.properties = properties;
         this.descriptors = {};
     };
@@ -113,11 +164,14 @@
     Characteristic.prototype.disableNotify = function(completeFn) {
         adapter.disableNotify(this, executeFn(completeFn), raiseError("disable notify error"));
     };
+    Characteristic.prototype.discoverDescriptors = function(completeFn) {
+        adapter.discoverDescriptors(this, executeFn(completeFn), raiseError("descriptor discovery error"));
+    };
 
     // Descriptor Object
-    var Descriptor = function(uuid, handle) {
+    var Descriptor = function(handle, uuid) {
+        this._handle = handle;
         this.uuid = uuid;
-        this.handle = handle;
     };
     Descriptor.prototype.read = function(completeFn) {
         adapter.readDescriptor(this, executeFn(completeFn), raiseError("read descriptor error"));
@@ -138,8 +192,8 @@
         init: function(readyFn, errorFn, adapterName) {
             onError = errorFn;
             if (adapterName) adapter = adapters[adapterName];
-            if (!adapter) raiseError("init error")("adapter not found");
-            else adapter.init(executeFn(readyFn), raiseError("init error"));
+            if (!adapter) return raiseError("init error")("adapter not found");
+            adapter.init(executeFn(readyFn), raiseError("init error"));
         },
         startScan: function(foundFn) {
             adapter.stop(raiseError("stop scan error"));
@@ -152,35 +206,6 @@
         },
         stopScan: function() {
             adapter.stop(raiseError("stop scan error"));
-        },
-        asyncWait: function(finishFn, errorFn) {
-            var count = 0;
-            var callbackAdded = false;
-            this.addCallback = function(fn) {
-                count++;
-                callbackAdded = true;
-                return function() {
-                    if (fn) {
-                        fn.apply(null, arguments);
-                    }
-                    if (--count == 0 && finishFn) {
-                        finishFn();
-                    }
-                }
-            };
-            this.error = function() {
-                if (errorFn) {
-                    errorFn.apply(null, arguments);
-                }
-                if (--count == 0 && finishFn) {
-                    finishFn();
-                }
-            };
-            this.finish = function() {
-                if (!callbackAdded && finishFn) {
-                    finishFn();
-                }
-            };
         },
         Device: Device,
         Service: Service,

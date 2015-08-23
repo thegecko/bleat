@@ -31,6 +31,7 @@ bleat.init(function() {
 			});
 
 			device.disconnect();
+		}, function() {
 			logStatus("disconnected from: " + device.name);
 		});
 	});

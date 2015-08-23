@@ -137,12 +137,14 @@ string serviceUUID: service to search for
 Connect to the device.
 
 ```
-void device.connect(connectFn, disconnectFn);
+void device.connect(connectFn, [disconnectFn], [suppressDiscovery]);
 ```
 
 function connectFn(): callback once connected
 
 function disconnectFn(): callback when disconnected
+
+bool suppressDiscovery: don't undertake automatic discovery of services, characteristics and descriptors
 
 #### device.disconnect
 
@@ -152,6 +154,26 @@ Disconnect from device.
 void device.disconnect();
 ```
 
+#### device.discoverServices
+
+Discover all services for this device
+
+```
+void device.discoverServices(callbackFn)
+```
+
+function callbackFn(): callback once discovery complete
+
+#### device.discoverAll
+
+Discover all services, characteristics and descriptors for this device
+
+```
+void device.discoverAll(callbackFn)
+```
+
+function callbackFn(): callback once discovery complete
+
 ### Service
 
 string uuid: uuid of service
@@ -159,6 +181,16 @@ string uuid: uuid of service
 bool primary: whether service is primary or not
 
 object characteristics: map of service characteristics keyed on characteristic uuid
+
+#### service.discoverCharacteristics
+
+Discover all characteristics for this service
+
+```
+void service.discoverCharacteristics(callbackFn)
+```
+
+function callbackFn(): callback once discovery complete
 
 ### Characteristic
 
@@ -211,6 +243,16 @@ void characteristic.disableNotify(completeFn);
 ```
 
 function completeFn(): callback function once completed
+
+#### characteristic.discoverDescriptors
+
+Discover all descriptors for this characteristic
+
+```
+void characteristic.discoverDescriptors(callbackFn)
+```
+
+function callbackFn(): callback once discovery complete
 
 ### Descriptor
 
