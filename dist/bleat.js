@@ -420,15 +420,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['bleat.core'], factory.bind(this, root.cordova, root));
+        define(['bleat.core'], factory.bind(this, root, root.cordova));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory(root.cordova, root, require('./bleat.core'));
+        module.exports = factory(root, root.cordova, require('./bleat.core'));
     } else {
         // Browser globals with support for web workers (root is window)
-        factory(root.cordova, root, root.bleat);
+        factory(root, root.cordova, root.bleat);
     }
-}(this, function(cordova, root, bleat) {
+}(this, function(root, cordova, bleat) {
     "use strict";
 
     var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";

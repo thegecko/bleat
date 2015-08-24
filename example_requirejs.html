@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="format-detection" content="telephone=no" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>bleat requirejs</title>
+</head>
+<body>
+
+	<div id="status"></div>
+
+	<script src="cordova.js"></script>
+	<script data-main="example_requirejs/main" src="example_requirejs/require.min.js"></script>
+
+	<script>
+		// Redirect console.log to Evothings Workbench
+		if (window.hyper && window.hyper.log) { console.log = hyper.log; }
+	</script>
+</body>
+</html>
