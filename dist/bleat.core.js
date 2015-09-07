@@ -1,7 +1,7 @@
 /* @license
  *
- * BLE Abstraction Tool: core functionality
- * Version: 0.0.14
+ * BLE Abstraction Tool: core functionality - bleat specification
+ * Version: 0.0.15
  *
  * The MIT License (MIT)
  *
@@ -182,12 +182,12 @@
 
     // Main Module
     return {
-        raiseError: function(msg) {
-            if (onError) onError(msg);
-        },
-        addAdapter: function(adapterName, definition) {
+        _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
+        },
+        _raiseError: function(msg) {
+            if (onError) onError(msg);
         },
         init: function(readyFn, errorFn, adapterName) {
             onError = errorFn;
@@ -195,10 +195,11 @@
             if (!adapter) return raiseError("init error")("adapter not found");
             adapter.init(executeFn(readyFn), raiseError("init error"));
         },
-        startScan: function(foundFn) {
+        startScan: function(foundFn, serviceUUIDs) {
+            serviceUUIDs = serviceUUIDs || [];
             adapter.stop(raiseError("stop scan error"));
             var devices = {};
-            adapter.scan(function(device) {
+            adapter.scan(serviceUUIDs, function(device) {
                 if (devices[device.address]) return;
                 devices[device.address] = device;
                 if (foundFn) foundFn(device);

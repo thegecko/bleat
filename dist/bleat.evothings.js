@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.7
+ * Version: 0.0.8
  *
  * The MIT License (MIT)
  *
@@ -146,7 +146,7 @@
 
         var platform = cordova.platformId;
 
-        bleat.addAdapter("evothings", {
+        bleat._addAdapter("evothings", {
             deviceHandles: {},
             serviceHandles: {},
             characteristicHandles: {},
@@ -156,11 +156,16 @@
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
             },
-            scan: function(foundFn, errorFn) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
                 evothings.ble.startScan(function(deviceInfo) {
                     var advert = parseAdvert(deviceInfo);
-                    var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
-                    foundFn(device);
+                    var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
+                        return (advert.serviceUUIDs.indexOf(serviceUUID) >= 0);
+                    });
+                    if (hasService) {
+                        var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
+                        foundFn(device);
+                    }
                 }, errorFn);
             },
             stop: function(errorFn) {

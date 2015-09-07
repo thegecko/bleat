@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: noble adapter
- * Version: 0.0.3
+ * Version: 0.0.4
  *
  * The MIT License (MIT)
  *
@@ -59,7 +59,7 @@
 
     // https://github.com/sandeepmistry/noble
     if (noble) {
-        bleat.addAdapter("noble", {
+        bleat._addAdapter("noble", {
             foundFn: null,
             deviceHandles: {},
             serviceHandles: {},
@@ -88,9 +88,9 @@
                 if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
                 else stateCB(noble.state);
             },
-            scan: function(foundFn, errorFn) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
                 this.foundFn = foundFn;
-                noble.startScanning([], false, checkForError(errorFn));
+                noble.startScanning(serviceUUIDs, false, checkForError(errorFn));
             },
             stop: function(errorFn) {
                 noble.stopScanning();

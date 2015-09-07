@@ -1,7 +1,7 @@
 /* @license
  *
- * BLE Abstraction Tool: core functionality
- * Version: 0.0.14
+ * BLE Abstraction Tool: core functionality - bleat specification
+ * Version: 0.0.15
  *
  * The MIT License (MIT)
  *
@@ -182,12 +182,12 @@
 
     // Main Module
     return {
-        raiseError: function(msg) {
-            if (onError) onError(msg);
-        },
-        addAdapter: function(adapterName, definition) {
+        _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
+        },
+        _raiseError: function(msg) {
+            if (onError) onError(msg);
         },
         init: function(readyFn, errorFn, adapterName) {
             onError = errorFn;
@@ -195,10 +195,11 @@
             if (!adapter) return raiseError("init error")("adapter not found");
             adapter.init(executeFn(readyFn), raiseError("init error"));
         },
-        startScan: function(foundFn) {
+        startScan: function(foundFn, serviceUUIDs) {
+            serviceUUIDs = serviceUUIDs || [];
             adapter.stop(raiseError("stop scan error"));
             var devices = {};
-            adapter.scan(function(device) {
+            adapter.scan(serviceUUIDs, function(device) {
                 if (devices[device.address]) return;
                 devices[device.address] = device;
                 if (foundFn) foundFn(device);
@@ -216,7 +217,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.7
+ * Version: 0.0.8
  *
  * The MIT License (MIT)
  *
@@ -272,19 +273,14 @@
     // https://developer.chrome.com/apps/bluetoothLowEnergy
     if (chrome && chrome.bluetooth && chrome.bluetoothLowEnergy) {
 
-        bleat.addAdapter("chromeos", {
+        bleat._addAdapter("chromeos", {
             charNotifies: {},
             deviceDisconnects: {},
-            foundFn: null,
+            deviceFoundFn: function() {},
             init: function(readyFn, errorFn) {
                 chrome.bluetooth.getAdapterState(checkForError(errorFn, function(adapterInfo) {
                     if (adapterInfo.available) {
-                        chrome.bluetooth.onDeviceAdded.addListener(function(deviceInfo) {
-                            if (this.foundFn) {
-                                var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
-                                this.foundFn(device);
-                            }
-                        }.bind(this));
+                        chrome.bluetooth.onDeviceAdded.addListener(this.deviceFoundFn);
                         chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(characteristicInfo) {
                             if (typeof this.charNotifies[characteristicInfo.instanceId] === "function") {
                                 this.charNotifies[characteristicInfo.instanceId](characteristicInfo.value);
@@ -306,20 +302,26 @@
                     delete this.deviceDisconnects[deviceInfo.address];
                 }
             },
-            scan: function(foundFn, errorFn) {
-                chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
-                    devices.forEach(function(deviceInfo) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
+                this.deviceFoundFn = function(deviceInfo) {
+                    var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
+                        return (deviceInfo.uuids.indexOf(serviceUUID) >= 0);
+                    });
+                    if (hasService) {
                         var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
                         foundFn(device);
-                    });
+                    }
+                };
+                chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
+                    devices.forEach(this.deviceFoundFn);
                 }));
-
-                this.foundFn = foundFn;
-                chrome.bluetooth.startDiscovery(checkForError(errorFn));
+                chrome.bluetooth.stopDiscovery(checkForError(errorFn, function() {
+                    chrome.bluetooth.startDiscovery(checkForError(errorFn));
+                }));
             },
             stop: function(errorFn) {
                 this.foundFn = null;
-                if (chrome.bluetooth.discovering) chrome.bluetooth.stopDiscovery(checkForError(errorFn));
+                chrome.bluetooth.stopDiscovery(checkForError(errorFn));
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
                 chrome.bluetoothLowEnergy.connect(device.address, checkForError(errorFn, function() {
@@ -391,7 +393,7 @@
 /* @license
  *
  * BLE Abstraction Tool: evothings adapter
- * Version: 0.0.7
+ * Version: 0.0.8
  *
  * The MIT License (MIT)
  *
@@ -536,7 +538,7 @@
 
         var platform = cordova.platformId;
 
-        bleat.addAdapter("evothings", {
+        bleat._addAdapter("evothings", {
             deviceHandles: {},
             serviceHandles: {},
             characteristicHandles: {},
@@ -546,11 +548,16 @@
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
             },
-            scan: function(foundFn, errorFn) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
                 evothings.ble.startScan(function(deviceInfo) {
                     var advert = parseAdvert(deviceInfo);
-                    var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
-                    foundFn(device);
+                    var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
+                        return (advert.serviceUUIDs.indexOf(serviceUUID) >= 0);
+                    });
+                    if (hasService) {
+                        var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
+                        foundFn(device);
+                    }
                 }, errorFn);
             },
             stop: function(errorFn) {
@@ -660,7 +667,7 @@
 /* @license
  *
  * BLE Abstraction Tool: noble adapter
- * Version: 0.0.3
+ * Version: 0.0.4
  *
  * The MIT License (MIT)
  *
@@ -718,7 +725,7 @@
 
     // https://github.com/sandeepmistry/noble
     if (noble) {
-        bleat.addAdapter("noble", {
+        bleat._addAdapter("noble", {
             foundFn: null,
             deviceHandles: {},
             serviceHandles: {},
@@ -747,9 +754,9 @@
                 if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
                 else stateCB(noble.state);
             },
-            scan: function(foundFn, errorFn) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
                 this.foundFn = foundFn;
-                noble.startScanning([], false, checkForError(errorFn));
+                noble.startScanning(serviceUUIDs, false, checkForError(errorFn));
             },
             stop: function(errorFn) {
                 noble.stopScanning();

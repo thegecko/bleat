@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: chromeos adapter
- * Version: 0.0.7
+ * Version: 0.0.8
  *
  * The MIT License (MIT)
  *
@@ -57,19 +57,14 @@
     // https://developer.chrome.com/apps/bluetoothLowEnergy
     if (chrome && chrome.bluetooth && chrome.bluetoothLowEnergy) {
 
-        bleat.addAdapter("chromeos", {
+        bleat._addAdapter("chromeos", {
             charNotifies: {},
             deviceDisconnects: {},
-            foundFn: null,
+            deviceFoundFn: function() {},
             init: function(readyFn, errorFn) {
                 chrome.bluetooth.getAdapterState(checkForError(errorFn, function(adapterInfo) {
                     if (adapterInfo.available) {
-                        chrome.bluetooth.onDeviceAdded.addListener(function(deviceInfo) {
-                            if (this.foundFn) {
-                                var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
-                                this.foundFn(device);
-                            }
-                        }.bind(this));
+                        chrome.bluetooth.onDeviceAdded.addListener(this.deviceFoundFn);
                         chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(characteristicInfo) {
                             if (typeof this.charNotifies[characteristicInfo.instanceId] === "function") {
                                 this.charNotifies[characteristicInfo.instanceId](characteristicInfo.value);
@@ -91,20 +86,26 @@
                     delete this.deviceDisconnects[deviceInfo.address];
                 }
             },
-            scan: function(foundFn, errorFn) {
-                chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
-                    devices.forEach(function(deviceInfo) {
+            scan: function(serviceUUIDs, foundFn, errorFn) {
+                this.deviceFoundFn = function(deviceInfo) {
+                    var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
+                        return (deviceInfo.uuids.indexOf(serviceUUID) >= 0);
+                    });
+                    if (hasService) {
                         var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
                         foundFn(device);
-                    });
+                    }
+                };
+                chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
+                    devices.forEach(this.deviceFoundFn);
                 }));
-
-                this.foundFn = foundFn;
-                chrome.bluetooth.startDiscovery(checkForError(errorFn));
+                chrome.bluetooth.stopDiscovery(checkForError(errorFn, function() {
+                    chrome.bluetooth.startDiscovery(checkForError(errorFn));
+                }));
             },
             stop: function(errorFn) {
                 this.foundFn = null;
-                if (chrome.bluetooth.discovering) chrome.bluetooth.stopDiscovery(checkForError(errorFn));
+                chrome.bluetooth.stopDiscovery(checkForError(errorFn));
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
                 chrome.bluetoothLowEnergy.connect(device.address, checkForError(errorFn, function() {
