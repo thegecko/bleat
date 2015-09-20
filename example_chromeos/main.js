@@ -1,4 +1,5 @@
 var statusEl = document.getElementById("status");
+var device = null;
 
 function logStatus(message) {
 	console.log(message);
@@ -7,7 +8,10 @@ function logStatus(message) {
 
 bleat.init(function() {
 	logStatus("bluetooth ready");
-	bleat.startScan(function(device) {
+	bleat.startScan(function(foundDevice) {
+
+		if (device) return;
+		device = foundDevice;
 
 		bleat.stopScan();
 	  	logStatus("found device: " + device.name);

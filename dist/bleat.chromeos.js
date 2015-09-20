@@ -99,13 +99,16 @@
                 chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
                     devices.forEach(this.deviceFoundFn);
                 }));
-                chrome.bluetooth.stopDiscovery(checkForError(errorFn, function() {
+                chrome.bluetooth.stopDiscovery(function() {
+                    chrome.runtime.lastError;
                     chrome.bluetooth.startDiscovery(checkForError(errorFn));
-                }));
+                });
             },
             stop: function(errorFn) {
-                this.foundFn = null;
-                chrome.bluetooth.stopDiscovery(checkForError(errorFn));
+                this.deviceFoundFn = function() {};
+                chrome.bluetooth.stopDiscovery(function() {
+                    chrome.runtime.lastError;
+                });
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
                 chrome.bluetoothLowEnergy.connect(device.address, checkForError(errorFn, function() {

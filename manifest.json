@@ -7,7 +7,7 @@
   "minimum_chrome_version": "37",
 
   "bluetooth": {
-    "uuids": ["fee0", "fee1", "fee7", "1801", "aaaa"],
+    "uuids": ["1801", "1802", "fee0", "fee1", "fee7"],
     "low_energy": true
   },
 
