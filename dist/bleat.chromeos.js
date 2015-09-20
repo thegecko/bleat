@@ -92,7 +92,7 @@
                         return (deviceInfo.uuids.indexOf(serviceUUID) >= 0);
                     });
                     if (hasService) {
-                        var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
+                        var device = new bleat._Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
                         foundFn(device);
                     }
                 };
@@ -122,7 +122,7 @@
             discoverServices: function(device, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getServices(device.address, checkForError(errorFn, function(services) {
                     services.forEach(function(serviceInfo) {
-                        var service = new bleat.Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
+                        var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
                         device.services[service.uuid] = service;
                     });
                     completeFn();
@@ -131,7 +131,7 @@
             discoverCharacteristics: function(service, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getCharacteristics(service._handle, checkForError(errorFn, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
-                        var characteristic = new bleat.Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
+                        var characteristic = new bleat._Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
                         service.characteristics[characteristic.uuid] = characteristic;
                     });
                     completeFn();
@@ -140,7 +140,7 @@
             discoverDescriptors: function(characteristic, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getDescriptors(characteristic._handle, checkForError(errorFn, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
-                        var descriptor = new bleat.Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
+                        var descriptor = new bleat._Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
                         characteristic.descriptors[descriptor.uuid] = descriptor;
                     });
                     completeFn();

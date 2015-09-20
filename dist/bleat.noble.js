@@ -77,7 +77,7 @@
                                 deviceInfo.advertisement.serviceUuids.forEach(function(serviceUUID) {
                                     serviceUUIDs.push(expandUUID(serviceUUID));
                                 });
-                                var device = new bleat.Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
+                                var device = new bleat._Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
                                 this.foundFn(device);
                             }
                         }.bind(this));
@@ -111,7 +111,7 @@
 
                         this.serviceHandles[serviceInfo.uuid] = serviceInfo;
                         var serviceUUID = expandUUID(serviceInfo.uuid);
-                        var service = new bleat.Service(serviceInfo.uuid, serviceUUID, false);
+                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, false);
                         device.services[service.uuid] = service;
 
                     }, this);
@@ -125,7 +125,7 @@
 
                         this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
                         var charUUID = expandUUID(characteristicInfo.uuid);
-                        var characteristic = new bleat.Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
+                        var characteristic = new bleat._Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
                         service.characteristics[characteristic.uuid] = characteristic;
 
                         characteristicInfo.on('read', function(data, isNotification) {
@@ -147,7 +147,7 @@
                         var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
                         this.descriptorHandles[descHandle] = descriptorInfo;
                         var descUUID = expandUUID(descriptorInfo.uuid);
-                        var descriptor = new bleat.Descriptor(descHandle, descUUID);
+                        var descriptor = new bleat._Descriptor(descHandle, descUUID);
                         characteristic.descriptors[descUUID] = descriptor;
 
                     }, this);

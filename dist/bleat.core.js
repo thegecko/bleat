@@ -86,14 +86,9 @@
         this.services = {};
     };
     Device.prototype.hasService = function(serviceUUID) {
-        var found = false;
-        this.serviceUUIDs.some(function(uuid) {
-            if (uuid === serviceUUID) {
-                found = true;
-                return true;
-            }
+        return this.serviceUUIDs.some(function(uuid) {
+            return (uuid === serviceUUID);
         });
-        return found;
     };
     Device.prototype.connect = function(connectFn, disconnectFn, suppressDiscovery) {
         adapter.connect(this, function() {
@@ -152,6 +147,9 @@
         this.properties = properties;
         this.descriptors = {};
     };
+    Characteristic.prototype.discoverDescriptors = function(completeFn) {
+        adapter.discoverDescriptors(this, executeFn(completeFn), raiseError("descriptor discovery error"));
+    };
     Characteristic.prototype.read = function(completeFn) {
         adapter.readCharacteristic(this, executeFn(completeFn), raiseError("read characteristic error"));
     };
@@ -163,9 +161,6 @@
     };
     Characteristic.prototype.disableNotify = function(completeFn) {
         adapter.disableNotify(this, executeFn(completeFn), raiseError("disable notify error"));
-    };
-    Characteristic.prototype.discoverDescriptors = function(completeFn) {
-        adapter.discoverDescriptors(this, executeFn(completeFn), raiseError("descriptor discovery error"));
     };
 
     // Descriptor Object
@@ -182,12 +177,13 @@
 
     // Main Module
     return {
+        _Device: Device,
+        _Service: Service,
+        _Characteristic: Characteristic,
+        _Descriptor: Descriptor,
         _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
-        },
-        _raiseError: function(msg) {
-            if (onError) onError(msg);
         },
         init: function(readyFn, errorFn, adapterName) {
             onError = errorFn;
@@ -207,10 +203,6 @@
         },
         stopScan: function() {
             adapter.stop(raiseError("stop scan error"));
-        },
-        Device: Device,
-        Service: Service,
-        Characteristic: Characteristic,
-        Descriptor: Descriptor
+        }
     };
 }));

@@ -163,7 +163,7 @@
                         return (advert.serviceUUIDs.indexOf(serviceUUID) >= 0);
                     });
                     if (hasService) {
-                        var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
+                        var device = new bleat._Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
                         foundFn(device);
                     }
                 }, errorFn);
@@ -194,7 +194,7 @@
                     services.forEach(function(serviceInfo) {
 
                         this.serviceHandles[serviceInfo.handle] = deviceHandle;
-                        var service = new bleat.Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
+                        var service = new bleat._Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
                         device.services[service.uuid] = service;
 
                     }, this);
@@ -208,7 +208,7 @@
 
                         this.characteristicHandles[characteristicInfo.handle] = deviceHandle;
                         var properties = [];// [characteristicInfo.permission + characteristicInfo.property + characteristicInfo.writeType]
-                        var characteristic = new bleat.Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
+                        var characteristic = new bleat._Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
                         service.characteristics[characteristic.uuid] = characteristic;
 
                     }, this);
@@ -221,7 +221,7 @@
                     descriptors.forEach(function(descriptorInfo) {
 
                         this.descriptorHandles[descriptorInfo.handle] = deviceHandle;
-                        var descriptor = new bleat.Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
+                        var descriptor = new bleat._Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
                         characteristic.descriptors[descriptor.uuid] = descriptor;
 
                     }, this);
