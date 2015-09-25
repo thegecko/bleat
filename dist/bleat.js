@@ -77,6 +77,14 @@
         };
     }
 
+    function canonicalUUID(uuid) {
+        if (typeof uuid === "number") uuid = uuid.toString(16);
+        if (uuid.length <= 8) uuid = ("00000000" + uuid).slice(-8) + "-0000-1000-8000-00805f9b34fb";
+        uuid = uuid.toLowerCase();
+        if (uuid.length === 32) uuid = uuid.match(/^([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{12})$/).splice(1).join("-");
+        return uuid;
+    }
+
     // Device Object
     var Device = function(address, name, serviceUUIDs) {
         this.address = address;
@@ -86,14 +94,9 @@
         this.services = {};
     };
     Device.prototype.hasService = function(serviceUUID) {
-        var found = false;
-        this.serviceUUIDs.some(function(uuid) {
-            if (uuid === serviceUUID) {
-                found = true;
-                return true;
-            }
+        return this.serviceUUIDs.some(function(uuid) {
+            return (uuid === serviceUUID);
         });
-        return found;
     };
     Device.prototype.connect = function(connectFn, disconnectFn, suppressDiscovery) {
         adapter.connect(this, function() {
@@ -109,9 +112,15 @@
     Device.prototype.disconnect = function() {
         adapter.disconnect(this, raiseError("disconnect error"));
     };
-    Device.prototype.discoverServices = function(completeFn) {
+    Device.prototype.discoverServices = function(serviceUUIDs, completeFn) {
         if (this.connected === false) return raiseError("discovery error")("device not connected");
-        adapter.discoverServices(this, executeFn(completeFn), raiseError("service discovery error"));
+        if (typeof serviceUUIDs === "function") {
+            completeFn = serviceUUIDs;
+            serviceUUIDs = [];
+        } else if (typeof serviceUUIDs === "string") {
+            serviceUUIDs = [serviceUUIDs];
+        }
+        adapter.discoverServices(this, serviceUUIDs, executeFn(completeFn), raiseError("service discovery error"));
     };
     Device.prototype.discoverAll = function(completeFn) {
         if (this.connected === false) return raiseError("discovery error")("device not connected");
@@ -120,6 +129,8 @@
         this.discoverServices(wait.addCallback(function() {
             Object.keys(this.services).forEach(function(serviceUUID) {
                 var service = this.services[serviceUUID];
+
+                service.discoverIncludedServices(wait.addCallback());
 
                 service.discoverCharacteristics(wait.addCallback(function() {
                     Object.keys(service.characteristics).forEach(function(characteristicUUID) {
@@ -139,10 +150,26 @@
         this._handle = handle;
         this.uuid = uuid;
         this.primary = primary;
+        this.includedServices = {};
         this.characteristics = {};
     };
-    Service.prototype.discoverCharacteristics = function(completeFn) {
-        adapter.discoverCharacteristics(this, executeFn(completeFn), raiseError("characteristic discovery error"));
+    Service.prototype.discoverIncludedServices = function(serviceUUIDs, completeFn) {
+        if (typeof serviceUUIDs === "function") {
+            completeFn = serviceUUIDs;
+            serviceUUIDs = [];
+        } else if (typeof serviceUUIDs === "string") {
+            serviceUUIDs = [serviceUUIDs];
+        }
+        adapter.discoverIncludedServices(this, serviceUUIDs, executeFn(completeFn), raiseError("included service discovery error"));
+    };
+    Service.prototype.discoverCharacteristics = function(characteristicUUIDs, completeFn) {
+        if (typeof characteristicUUIDs === "function") {
+            completeFn = characteristicUUIDs;
+            characteristicUUIDs = [];
+        } else if (typeof characteristicUUIDs === "string") {
+            characteristicUUIDs = [characteristicUUIDs];
+        }
+        adapter.discoverCharacteristics(this, characteristicUUIDs, executeFn(completeFn), raiseError("characteristic discovery error"));
     };
 
     // Characteristic Object
@@ -151,6 +178,15 @@
         this.uuid = uuid;
         this.properties = properties;
         this.descriptors = {};
+    };
+    Characteristic.prototype.discoverDescriptors = function(descriptorUUIDs, completeFn) {
+        if (typeof descriptorUUIDs === "function") {
+            completeFn = descriptorUUIDs;
+            descriptorUUIDs = [];
+        } else if (typeof descriptorUUIDs === "string") {
+            descriptorUUIDs = [descriptorUUIDs];
+        }
+        adapter.discoverDescriptors(this, descriptorUUIDs, executeFn(completeFn), raiseError("descriptor discovery error"));
     };
     Characteristic.prototype.read = function(completeFn) {
         adapter.readCharacteristic(this, executeFn(completeFn), raiseError("read characteristic error"));
@@ -163,9 +199,6 @@
     };
     Characteristic.prototype.disableNotify = function(completeFn) {
         adapter.disableNotify(this, executeFn(completeFn), raiseError("disable notify error"));
-    };
-    Characteristic.prototype.discoverDescriptors = function(completeFn) {
-        adapter.discoverDescriptors(this, executeFn(completeFn), raiseError("descriptor discovery error"));
     };
 
     // Descriptor Object
@@ -182,12 +215,14 @@
 
     // Main Module
     return {
+        _Device: Device,
+        _Service: Service,
+        _Characteristic: Characteristic,
+        _Descriptor: Descriptor,
+        _canonicalUUID: canonicalUUID,
         _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
-        },
-        _raiseError: function(msg) {
-            if (onError) onError(msg);
         },
         init: function(readyFn, errorFn, adapterName) {
             onError = errorFn;
@@ -195,23 +230,24 @@
             if (!adapter) return raiseError("init error")("adapter not found");
             adapter.init(executeFn(readyFn), raiseError("init error"));
         },
-        startScan: function(foundFn, serviceUUIDs) {
-            serviceUUIDs = serviceUUIDs || [];
-            adapter.stop(raiseError("stop scan error"));
+        startScan: function(serviceUUIDs, foundFn) {
+            if (typeof serviceUUIDs === "function") {
+                foundFn = serviceUUIDs;
+                serviceUUIDs = [];
+            } else if (typeof serviceUUIDs === "string") {
+                serviceUUIDs = [serviceUUIDs];
+            }
+            adapter.stopScan(raiseError("stop scan error"));
             var devices = {};
-            adapter.scan(serviceUUIDs, function(device) {
+            adapter.startScan(serviceUUIDs, function(device) {
                 if (devices[device.address]) return;
                 devices[device.address] = device;
                 if (foundFn) foundFn(device);
             }.bind(this), raiseError("scan error"));
         },
         stopScan: function() {
-            adapter.stop(raiseError("stop scan error"));
-        },
-        Device: Device,
-        Service: Service,
-        Characteristic: Characteristic,
-        Descriptor: Descriptor
+            adapter.stopScan(raiseError("stop scan error"));
+        }
     };
 }));
 /* @license
@@ -302,26 +338,29 @@
                     delete this.deviceDisconnects[deviceInfo.address];
                 }
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 this.deviceFoundFn = function(deviceInfo) {
                     var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
                         return (deviceInfo.uuids.indexOf(serviceUUID) >= 0);
                     });
                     if (hasService) {
-                        var device = new bleat.Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
+                        var device = new bleat._Device(deviceInfo.address, deviceInfo.name, deviceInfo.uuids || []);
                         foundFn(device);
                     }
                 };
                 chrome.bluetooth.getDevices(checkForError(errorFn, function(devices) {
                     devices.forEach(this.deviceFoundFn);
                 }));
-                chrome.bluetooth.stopDiscovery(checkForError(errorFn, function() {
+                chrome.bluetooth.stopDiscovery(function() {
+                    var e = chrome.runtime.lastError;
                     chrome.bluetooth.startDiscovery(checkForError(errorFn));
-                }));
+                });
             },
-            stop: function(errorFn) {
-                this.foundFn = null;
-                chrome.bluetooth.stopDiscovery(checkForError(errorFn));
+            stopScan: function(errorFn) {
+                this.deviceFoundFn = function() {};
+                chrome.bluetooth.stopDiscovery(function() {
+                    var e = chrome.runtime.lastError;
+                });
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
                 chrome.bluetoothLowEnergy.connect(device.address, checkForError(errorFn, function() {
@@ -332,29 +371,54 @@
             disconnect: function(device, errorFn) {
                 chrome.bluetoothLowEnergy.disconnect(device.address, checkForError(errorFn));
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getServices(device.address, checkForError(errorFn, function(services) {
                     services.forEach(function(serviceInfo) {
-                        var service = new bleat.Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
-                        device.services[service.uuid] = service;
+
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
+                            device.services[service.uuid] = service;
+                        }
+
                     });
                     completeFn();
                 }));
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(service, serviceUUIDs, completeFn, errorFn) {
+                chrome.bluetoothLowEnergy.getIncludedServices(service._handle, checkForError(errorFn, function(services) {
+                    services.forEach(function(serviceInfo) {
+
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
+                            service.includedServices[service.uuid] = service;
+                        }
+
+                    });
+                    completeFn();
+                }));
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getCharacteristics(service._handle, checkForError(errorFn, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
-                        var characteristic = new bleat.Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
-                        service.characteristics[characteristic.uuid] = characteristic;
+
+                        if (characteristicUUIDs.length === 0 || characteristicUUIDs.indexOf(characteristicInfo.uuid) >= 0) {
+                            var characteristic = new bleat._Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
+                            service.characteristics[characteristic.uuid] = characteristic;
+                        }
+
                     });
                     completeFn();
                 }));
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getDescriptors(characteristic._handle, checkForError(errorFn, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
-                        var descriptor = new bleat.Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
-                        characteristic.descriptors[descriptor.uuid] = descriptor;
+
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            var descriptor = new bleat._Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
+                            characteristic.descriptors[descriptor.uuid] = descriptor;
+                        }
+
                     });
                     completeFn();
                 }));
@@ -433,7 +497,6 @@
 }(this, function(root, cordova, bleat) {
     "use strict";
 
-    var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
     var CCCD_UUID = "00002902-0000-1000-8000-00805f9b34fb";
 
     // Advert parsing from https://github.com/evothings/evothings-examples/blob/master/resources/libs/evothings/easyble/easyble.js
@@ -476,14 +539,10 @@
 
     function arrayToUUID(array, offset) {
         var uuid = "";
-        var pointer = 0;
-        [4, 2, 2, 2, 6].forEach(function(length) {
-            uuid += '-';
-            for (var i = 0; i < length; i++, pointer++) {
-                uuid += ("00" + array[offset + pointer].toString(16)).slice(-2);
-            }
-        });
-        return uuid.substr(1);
+        for (var i = 0; i < 16; i++) {
+            uuid += ("00" + array[offset + i].toString(16)).slice(-2);
+        }
+        return uuid;
     }
 
     function parseAdvert(deviceInfo) {
@@ -496,8 +555,7 @@
             if (deviceInfo.advertisementData.kCBAdvDataLocalName) advert.name = deviceInfo.advertisementData.kCBAdvDataLocalName;
             if (deviceInfo.advertisementData.kCBAdvDataServiceUUIDs) {
                 deviceInfo.advertisementData.kCBAdvDataServiceUUIDs.forEach(function(serviceUUID) {
-                    if (serviceUUID.length > 8) advert.serviceUUIDs.push(serviceUUID.toLowerCase());
-                    else advert.serviceUUIDs.push(("00000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
+                    advert.serviceUUIDs.push(bleat._canonicalUUID(serviceUUID));
                 });
             }
         } else if (deviceInfo.scanRecord) {
@@ -514,15 +572,15 @@
 
                 if (type == 0x02 || type == 0x03) { // 16-bit Service Class UUIDs
                     for (i = 0; i < length; i += 2) {
-                        advert.serviceUUIDs.push(("0000" + littleEndianToUint16(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(littleEndianToUint16(byteArray, pos + i).toString(16)));
                     }
                 } else if (type == 0x04 || type == 0x05) { // 32-bit Service Class UUIDs
                     for (i = 0; i < length; i += 4) {
-                        advert.serviceUUIDs.push(("00000000" + littleEndianToUint32(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(littleEndianToUint32(byteArray, pos + i).toString(16)));
                     }
                 } else if (type == 0x06 || type == 0x07) { // 128-bit Service Class UUIDs
-                    for (i = 0; i < length; i += 4) {
-                        advert.serviceUUIDs.push(arrayToUUID(byteArray, pos + i));
+                    for (i = 0; i < length; i += 16) {
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(arrayToUUID(byteArray, pos + i)));
                     }
                 } else if (type == 0x08 || type == 0x09) { // Local Name
                     advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length)).replace('\0', '');
@@ -548,19 +606,19 @@
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 evothings.ble.startScan(function(deviceInfo) {
                     var advert = parseAdvert(deviceInfo);
                     var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
                         return (advert.serviceUUIDs.indexOf(serviceUUID) >= 0);
                     });
                     if (hasService) {
-                        var device = new bleat.Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
+                        var device = new bleat._Device(deviceInfo.address, advert.name, advert.serviceUUIDs);
                         foundFn(device);
                     }
                 }, errorFn);
             },
-            stop: function(errorFn) {
+            stopScan: function(errorFn) {
                 evothings.ble.stopScan();
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
@@ -580,41 +638,51 @@
             disconnect: function(device, errorFn) {
                 if (this.deviceHandles[device.address]) evothings.ble.close(this.deviceHandles[device.address]);
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.deviceHandles[device.address];
                 evothings.ble.services(deviceHandle, function(services) {
                     services.forEach(function(serviceInfo) {
 
-                        this.serviceHandles[serviceInfo.handle] = deviceHandle;
-                        var service = new bleat.Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
-                        device.services[service.uuid] = service;
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            this.serviceHandles[serviceInfo.handle] = deviceHandle;
+                            var service = new bleat._Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
+                            device.services[service.uuid] = service;
+                        }
 
                     }, this);
                     completeFn();
                 }.bind(this), errorFn);
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(device, serviceUUIDs, completeFn, errorFn) {
+                // Not Implemented in evothings
+                completeFn();
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.serviceHandles[service._handle];
                 evothings.ble.characteristics(deviceHandle, service._handle, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
 
-                        this.characteristicHandles[characteristicInfo.handle] = deviceHandle;
-                        var properties = [];// [characteristicInfo.permission + characteristicInfo.property + characteristicInfo.writeType]
-                        var characteristic = new bleat.Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
-                        service.characteristics[characteristic.uuid] = characteristic;
+                        if (characteristicUUIDs.length === 0 || characteristicUUIDs.indexOf(characteristicInfo.uuid) >= 0) {
+                            this.characteristicHandles[characteristicInfo.handle] = deviceHandle;
+                            var properties = [];// [characteristicInfo.permission + characteristicInfo.property + characteristicInfo.writeType]
+                            var characteristic = new bleat._Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
+                            service.characteristics[characteristic.uuid] = characteristic;
+                        }
 
                     }, this);
                     completeFn();
                 }.bind(this), errorFn);
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.characteristicHandles[characteristic._handle];
                 evothings.ble.descriptors(deviceHandle, characteristic._handle, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
 
-                        this.descriptorHandles[descriptorInfo.handle] = deviceHandle;
-                        var descriptor = new bleat.Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
-                        characteristic.descriptors[descriptor.uuid] = descriptor;
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            this.descriptorHandles[descriptorInfo.handle] = deviceHandle;
+                            var descriptor = new bleat._Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
+                            characteristic.descriptors[descriptor.uuid] = descriptor;
+                        }
 
                     }, this);
                     completeFn();
@@ -717,12 +785,6 @@
         };
     }
 
-    function expandUUID(uuid) {
-        var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
-        if (uuid.length > 8) return uuid.toLowerCase();
-        else return ("00000000" + uuid.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID;
-    }
-
     // https://github.com/sandeepmistry/noble
     if (noble) {
         bleat._addAdapter("noble", {
@@ -741,9 +803,9 @@
                                 this.deviceHandles[address] = deviceInfo;
                                 var serviceUUIDs = [];
                                 deviceInfo.advertisement.serviceUuids.forEach(function(serviceUUID) {
-                                    serviceUUIDs.push(expandUUID(serviceUUID));
+                                    serviceUUIDs.push(bleat._canonicalUUID(serviceUUID));
                                 });
-                                var device = new bleat.Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
+                                var device = new bleat._Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
                                 this.foundFn(device);
                             }
                         }.bind(this));
@@ -754,11 +816,11 @@
                 if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
                 else stateCB(noble.state);
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 this.foundFn = foundFn;
                 noble.startScanning(serviceUUIDs, false, checkForError(errorFn));
             },
-            stop: function(errorFn) {
+            stopScan: function(errorFn) {
                 noble.stopScanning();
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
@@ -770,28 +832,42 @@
             disconnect: function(device, errorFn) {
                 this.deviceHandles[device.address].disconnect(checkForError(errorFn));
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 var baseDevice = this.deviceHandles[device.address];
-                baseDevice.discoverServices([], checkForError(errorFn, function(services) {
+                baseDevice.discoverServices(serviceUUIDs, checkForError(errorFn, function(services) {
                     services.forEach(function(serviceInfo) {
 
                         this.serviceHandles[serviceInfo.uuid] = serviceInfo;
-                        var serviceUUID = expandUUID(serviceInfo.uuid);
-                        var service = new bleat.Service(serviceInfo.uuid, serviceUUID, false);
+                        var serviceUUID = bleat._canonicalUUID(serviceInfo.uuid);
+                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, true);
                         device.services[service.uuid] = service;
 
                     }, this);
                     completeFn();
                 }.bind(this)));
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(service, serviceUUIDs, completeFn, errorFn) {
                 var serviceInfo = this.serviceHandles[service._handle];
-                serviceInfo.discoverCharacteristics([], checkForError(errorFn, function(characteristics) {
+                serviceInfo.discoverIncludedServices(serviceUUIDs, checkForError(errorFn, function(services) {
+                    services.forEach(function(serviceInfo) {
+
+                        this.serviceHandles[serviceInfo.uuid] = serviceInfo;
+                        var serviceUUID = bleat._canonicalUUID(serviceInfo.uuid);
+                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, false);
+                        service.includedServices[service.uuid] = service;
+
+                    }, this);
+                    completeFn();
+                }.bind(this)));
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
+                var serviceInfo = this.serviceHandles[service._handle];
+                serviceInfo.discoverCharacteristics(characteristicUUIDs, checkForError(errorFn, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
 
                         this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
-                        var charUUID = expandUUID(characteristicInfo.uuid);
-                        var characteristic = new bleat.Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
+                        var charUUID = bleat._canonicalUUID(characteristicInfo.uuid);
+                        var characteristic = new bleat._Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
                         service.characteristics[characteristic.uuid] = characteristic;
 
                         characteristicInfo.on('read', function(data, isNotification) {
@@ -805,16 +881,18 @@
                     completeFn();
                 }.bind(this)));
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 var characteristicInfo = this.characteristicHandles[characteristic._handle];
                 characteristicInfo.discoverDescriptors(checkForError(errorFn, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
 
-                        var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
-                        this.descriptorHandles[descHandle] = descriptorInfo;
-                        var descUUID = expandUUID(descriptorInfo.uuid);
-                        var descriptor = new bleat.Descriptor(descHandle, descUUID);
-                        characteristic.descriptors[descUUID] = descriptor;
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
+                            this.descriptorHandles[descHandle] = descriptorInfo;
+                            var descUUID = bleat._canonicalUUID(descriptorInfo.uuid);
+                            var descriptor = new bleat._Descriptor(descHandle, descUUID);
+                            characteristic.descriptors[descUUID] = descriptor;
+                        }
 
                     }, this);
                     completeFn();

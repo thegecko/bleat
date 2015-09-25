@@ -100,14 +100,14 @@
                     devices.forEach(this.deviceFoundFn);
                 }));
                 chrome.bluetooth.stopDiscovery(function() {
-                    chrome.runtime.lastError;
+                    var e = chrome.runtime.lastError;
                     chrome.bluetooth.startDiscovery(checkForError(errorFn));
                 });
             },
             stopScan: function(errorFn) {
                 this.deviceFoundFn = function() {};
                 chrome.bluetooth.stopDiscovery(function() {
-                    chrome.runtime.lastError;
+                    var e = chrome.runtime.lastError;
                 });
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
