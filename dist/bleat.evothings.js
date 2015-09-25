@@ -150,7 +150,7 @@
                 if (root.evothings && evothings.ble) readyFn();
                 else document.addEventListener("deviceready", readyFn);
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 evothings.ble.startScan(function(deviceInfo) {
                     var advert = parseAdvert(deviceInfo);
                     var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
@@ -162,7 +162,7 @@
                     }
                 }, errorFn);
             },
-            stop: function(errorFn) {
+            stopScan: function(errorFn) {
                 evothings.ble.stopScan();
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
@@ -182,41 +182,51 @@
             disconnect: function(device, errorFn) {
                 if (this.deviceHandles[device.address]) evothings.ble.close(this.deviceHandles[device.address]);
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.deviceHandles[device.address];
                 evothings.ble.services(deviceHandle, function(services) {
                     services.forEach(function(serviceInfo) {
 
-                        this.serviceHandles[serviceInfo.handle] = deviceHandle;
-                        var service = new bleat._Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
-                        device.services[service.uuid] = service;
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            this.serviceHandles[serviceInfo.handle] = deviceHandle;
+                            var service = new bleat._Service(serviceInfo.handle, serviceInfo.uuid, (serviceInfo.type === 0));
+                            device.services[service.uuid] = service;
+                        }
 
                     }, this);
                     completeFn();
                 }.bind(this), errorFn);
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(device, serviceUUIDs, completeFn, errorFn) {
+                // Not Implemented in evothings
+                completeFn();
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.serviceHandles[service._handle];
                 evothings.ble.characteristics(deviceHandle, service._handle, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
 
-                        this.characteristicHandles[characteristicInfo.handle] = deviceHandle;
-                        var properties = [];// [characteristicInfo.permission + characteristicInfo.property + characteristicInfo.writeType]
-                        var characteristic = new bleat._Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
-                        service.characteristics[characteristic.uuid] = characteristic;
+                        if (characteristicUUIDs.length === 0 || characteristicUUIDs.indexOf(characteristicInfo.uuid) >= 0) {
+                            this.characteristicHandles[characteristicInfo.handle] = deviceHandle;
+                            var properties = [];// [characteristicInfo.permission + characteristicInfo.property + characteristicInfo.writeType]
+                            var characteristic = new bleat._Characteristic(characteristicInfo.handle, characteristicInfo.uuid, properties);
+                            service.characteristics[characteristic.uuid] = characteristic;
+                        }
 
                     }, this);
                     completeFn();
                 }.bind(this), errorFn);
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 var deviceHandle = this.characteristicHandles[characteristic._handle];
                 evothings.ble.descriptors(deviceHandle, characteristic._handle, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
 
-                        this.descriptorHandles[descriptorInfo.handle] = deviceHandle;
-                        var descriptor = new bleat._Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
-                        characteristic.descriptors[descriptor.uuid] = descriptor;
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            this.descriptorHandles[descriptorInfo.handle] = deviceHandle;
+                            var descriptor = new bleat._Descriptor(descriptorInfo.handle, descriptorInfo.uuid);
+                            characteristic.descriptors[descriptor.uuid] = descriptor;
+                        }
 
                     }, this);
                     completeFn();

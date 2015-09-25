@@ -86,7 +86,7 @@
                     delete this.deviceDisconnects[deviceInfo.address];
                 }
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 this.deviceFoundFn = function(deviceInfo) {
                     var hasService = (serviceUUIDs.length === 0) || serviceUUIDs.some(function(serviceUUID) {
                         return (deviceInfo.uuids.indexOf(serviceUUID) >= 0);
@@ -104,7 +104,7 @@
                     chrome.bluetooth.startDiscovery(checkForError(errorFn));
                 });
             },
-            stop: function(errorFn) {
+            stopScan: function(errorFn) {
                 this.deviceFoundFn = function() {};
                 chrome.bluetooth.stopDiscovery(function() {
                     chrome.runtime.lastError;
@@ -119,29 +119,54 @@
             disconnect: function(device, errorFn) {
                 chrome.bluetoothLowEnergy.disconnect(device.address, checkForError(errorFn));
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getServices(device.address, checkForError(errorFn, function(services) {
                     services.forEach(function(serviceInfo) {
-                        var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
-                        device.services[service.uuid] = service;
+
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
+                            device.services[service.uuid] = service;
+                        }
+
                     });
                     completeFn();
                 }));
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(service, serviceUUIDs, completeFn, errorFn) {
+                chrome.bluetoothLowEnergy.getIncludedServices(service._handle, checkForError(errorFn, function(services) {
+                    services.forEach(function(serviceInfo) {
+
+                        if (serviceUUIDs.length === 0 || serviceUUIDs.indexOf(serviceInfo.uuid) >= 0) {
+                            var service = new bleat._Service(serviceInfo.instanceId, serviceInfo.uuid, serviceInfo.isPrimary);
+                            service.includedServices[service.uuid] = service;
+                        }
+
+                    });
+                    completeFn();
+                }));
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getCharacteristics(service._handle, checkForError(errorFn, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
-                        var characteristic = new bleat._Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
-                        service.characteristics[characteristic.uuid] = characteristic;
+
+                        if (characteristicUUIDs.length === 0 || characteristicUUIDs.indexOf(characteristicInfo.uuid) >= 0) {
+                            var characteristic = new bleat._Characteristic(characteristicInfo.instanceId, characteristicInfo.uuid, characteristicInfo.properties);
+                            service.characteristics[characteristic.uuid] = characteristic;
+                        }
+
                     });
                     completeFn();
                 }));
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 chrome.bluetoothLowEnergy.getDescriptors(characteristic._handle, checkForError(errorFn, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
-                        var descriptor = new bleat._Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
-                        characteristic.descriptors[descriptor.uuid] = descriptor;
+
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            var descriptor = new bleat._Descriptor(descriptorInfo.instanceId, descriptorInfo.uuid);
+                            characteristic.descriptors[descriptor.uuid] = descriptor;
+                        }
+
                     });
                     completeFn();
                 }));

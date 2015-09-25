@@ -82,11 +82,11 @@
                 if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
                 else stateCB(noble.state);
             },
-            scan: function(serviceUUIDs, foundFn, errorFn) {
+            startScan: function(serviceUUIDs, foundFn, errorFn) {
                 this.foundFn = foundFn;
                 noble.startScanning(serviceUUIDs, false, checkForError(errorFn));
             },
-            stop: function(errorFn) {
+            stopScan: function(errorFn) {
                 noble.stopScanning();
             },
             connect: function(device, connectFn, disconnectFn, errorFn) {
@@ -98,23 +98,37 @@
             disconnect: function(device, errorFn) {
                 this.deviceHandles[device.address].disconnect(checkForError(errorFn));
             },
-            discoverServices: function(device, completeFn, errorFn) {
+            discoverServices: function(device, serviceUUIDs, completeFn, errorFn) {
                 var baseDevice = this.deviceHandles[device.address];
-                baseDevice.discoverServices([], checkForError(errorFn, function(services) {
+                baseDevice.discoverServices(serviceUUIDs, checkForError(errorFn, function(services) {
                     services.forEach(function(serviceInfo) {
 
                         this.serviceHandles[serviceInfo.uuid] = serviceInfo;
                         var serviceUUID = bleat._canonicalUUID(serviceInfo.uuid);
-                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, false);
+                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, true);
                         device.services[service.uuid] = service;
 
                     }, this);
                     completeFn();
                 }.bind(this)));
             },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
+            discoverIncludedServices: function(service, serviceUUIDs, completeFn, errorFn) {
                 var serviceInfo = this.serviceHandles[service._handle];
-                serviceInfo.discoverCharacteristics([], checkForError(errorFn, function(characteristics) {
+                serviceInfo.discoverIncludedServices(serviceUUIDs, checkForError(errorFn, function(services) {
+                    services.forEach(function(serviceInfo) {
+
+                        this.serviceHandles[serviceInfo.uuid] = serviceInfo;
+                        var serviceUUID = bleat._canonicalUUID(serviceInfo.uuid);
+                        var service = new bleat._Service(serviceInfo.uuid, serviceUUID, false);
+                        service.includedServices[service.uuid] = service;
+
+                    }, this);
+                    completeFn();
+                }.bind(this)));
+            },
+            discoverCharacteristics: function(service, characteristicUUIDs, completeFn, errorFn) {
+                var serviceInfo = this.serviceHandles[service._handle];
+                serviceInfo.discoverCharacteristics(characteristicUUIDs, checkForError(errorFn, function(characteristics) {
                     characteristics.forEach(function(characteristicInfo) {
 
                         this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
@@ -133,16 +147,18 @@
                     completeFn();
                 }.bind(this)));
             },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
+            discoverDescriptors: function(characteristic, descriptorUUIDs, completeFn, errorFn) {
                 var characteristicInfo = this.characteristicHandles[characteristic._handle];
                 characteristicInfo.discoverDescriptors(checkForError(errorFn, function(descriptors) {
                     descriptors.forEach(function(descriptorInfo) {
 
-                        var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
-                        this.descriptorHandles[descHandle] = descriptorInfo;
-                        var descUUID = bleat._canonicalUUID(descriptorInfo.uuid);
-                        var descriptor = new bleat._Descriptor(descHandle, descUUID);
-                        characteristic.descriptors[descUUID] = descriptor;
+                        if (descriptorUUIDs.length === 0 || descriptorUUIDs.indexOf(descriptorInfo.uuid) >= 0) {
+                            var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
+                            this.descriptorHandles[descHandle] = descriptorInfo;
+                            var descUUID = bleat._canonicalUUID(descriptorInfo.uuid);
+                            var descriptor = new bleat._Descriptor(descHandle, descUUID);
+                            characteristic.descriptors[descUUID] = descriptor;
+                        }
 
                     }, this);
                     completeFn();
