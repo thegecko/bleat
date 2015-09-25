@@ -77,6 +77,14 @@
         };
     }
 
+    function canonicalUUID(uuid) {
+        if (typeof uuid === "number") uuid = uuid.toString(16);
+        if (uuid.length <= 8) uuid = ("00000000" + uuid).slice(-8) + "-0000-1000-8000-00805f9b34fb";
+        uuid = uuid.toLowerCase();
+        if (uuid.length === 32) uuid = uuid.match(/^([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{12})$/).splice(1).join("-");
+        return uuid;
+    }
+
     // Device Object
     var Device = function(address, name, serviceUUIDs) {
         this.address = address;
@@ -181,6 +189,7 @@
         _Service: Service,
         _Characteristic: Characteristic,
         _Descriptor: Descriptor,
+        _canonicalUUID: canonicalUUID,
         _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;

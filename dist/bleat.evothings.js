@@ -41,7 +41,6 @@
 }(this, function(root, cordova, bleat) {
     "use strict";
 
-    var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
     var CCCD_UUID = "00002902-0000-1000-8000-00805f9b34fb";
 
     // Advert parsing from https://github.com/evothings/evothings-examples/blob/master/resources/libs/evothings/easyble/easyble.js
@@ -84,14 +83,10 @@
 
     function arrayToUUID(array, offset) {
         var uuid = "";
-        var pointer = 0;
-        [4, 2, 2, 2, 6].forEach(function(length) {
-            uuid += '-';
-            for (var i = 0; i < length; i++, pointer++) {
-                uuid += ("00" + array[offset + pointer].toString(16)).slice(-2);
-            }
-        });
-        return uuid.substr(1);
+        for (var i = 0; i < 16; i++) {
+            uuid += ("00" + array[offset + i].toString(16)).slice(-2);
+        }
+        return uuid;
     }
 
     function parseAdvert(deviceInfo) {
@@ -104,8 +99,7 @@
             if (deviceInfo.advertisementData.kCBAdvDataLocalName) advert.name = deviceInfo.advertisementData.kCBAdvDataLocalName;
             if (deviceInfo.advertisementData.kCBAdvDataServiceUUIDs) {
                 deviceInfo.advertisementData.kCBAdvDataServiceUUIDs.forEach(function(serviceUUID) {
-                    if (serviceUUID.length > 8) advert.serviceUUIDs.push(serviceUUID.toLowerCase());
-                    else advert.serviceUUIDs.push(("00000000" + serviceUUID.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID);
+                    advert.serviceUUIDs.push(bleat._canonicalUUID(serviceUUID));
                 });
             }
         } else if (deviceInfo.scanRecord) {
@@ -122,15 +116,15 @@
 
                 if (type == 0x02 || type == 0x03) { // 16-bit Service Class UUIDs
                     for (i = 0; i < length; i += 2) {
-                        advert.serviceUUIDs.push(("0000" + littleEndianToUint16(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(littleEndianToUint16(byteArray, pos + i).toString(16)));
                     }
                 } else if (type == 0x04 || type == 0x05) { // 32-bit Service Class UUIDs
                     for (i = 0; i < length; i += 4) {
-                        advert.serviceUUIDs.push(("00000000" + littleEndianToUint32(byteArray, pos + i).toString(16)).slice(-8) + BLUETOOTH_BASE_UUID);
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(littleEndianToUint32(byteArray, pos + i).toString(16)));
                     }
                 } else if (type == 0x06 || type == 0x07) { // 128-bit Service Class UUIDs
-                    for (i = 0; i < length; i += 4) {
-                        advert.serviceUUIDs.push(arrayToUUID(byteArray, pos + i));
+                    for (i = 0; i < length; i += 16) {
+                        advert.serviceUUIDs.push(bleat._canonicalUUID(arrayToUUID(byteArray, pos + i)));
                     }
                 } else if (type == 0x08 || type == 0x09) { // Local Name
                     advert.name = evothings.ble.fromUtf8(new Uint8Array(byteArray.buffer, pos, length)).replace('\0', '');

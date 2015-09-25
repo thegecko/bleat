@@ -51,12 +51,6 @@
         };
     }
 
-    function expandUUID(uuid) {
-        var BLUETOOTH_BASE_UUID = "-0000-1000-8000-00805f9b34fb";
-        if (uuid.length > 8) return uuid.toLowerCase();
-        else return ("00000000" + uuid.toLowerCase()).slice(-8) + BLUETOOTH_BASE_UUID;
-    }
-
     // https://github.com/sandeepmistry/noble
     if (noble) {
         bleat._addAdapter("noble", {
@@ -75,7 +69,7 @@
                                 this.deviceHandles[address] = deviceInfo;
                                 var serviceUUIDs = [];
                                 deviceInfo.advertisement.serviceUuids.forEach(function(serviceUUID) {
-                                    serviceUUIDs.push(expandUUID(serviceUUID));
+                                    serviceUUIDs.push(bleat._canonicalUUID(serviceUUID));
                                 });
                                 var device = new bleat._Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
                                 this.foundFn(device);
@@ -110,7 +104,7 @@
                     services.forEach(function(serviceInfo) {
 
                         this.serviceHandles[serviceInfo.uuid] = serviceInfo;
-                        var serviceUUID = expandUUID(serviceInfo.uuid);
+                        var serviceUUID = bleat._canonicalUUID(serviceInfo.uuid);
                         var service = new bleat._Service(serviceInfo.uuid, serviceUUID, false);
                         device.services[service.uuid] = service;
 
@@ -124,7 +118,7 @@
                     characteristics.forEach(function(characteristicInfo) {
 
                         this.characteristicHandles[characteristicInfo.uuid] = characteristicInfo;
-                        var charUUID = expandUUID(characteristicInfo.uuid);
+                        var charUUID = bleat._canonicalUUID(characteristicInfo.uuid);
                         var characteristic = new bleat._Characteristic(characteristicInfo.uuid, charUUID, characteristicInfo.properties);
                         service.characteristics[characteristic.uuid] = characteristic;
 
@@ -146,7 +140,7 @@
 
                         var descHandle = characteristicInfo.uuid + "-" + descriptorInfo.uuid;
                         this.descriptorHandles[descHandle] = descriptorInfo;
-                        var descUUID = expandUUID(descriptorInfo.uuid);
+                        var descUUID = bleat._canonicalUUID(descriptorInfo.uuid);
                         var descriptor = new bleat._Descriptor(descHandle, descUUID);
                         characteristic.descriptors[descUUID] = descriptor;
 
