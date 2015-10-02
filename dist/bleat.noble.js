@@ -60,6 +60,7 @@
             characteristicHandles: {},
             descriptorHandles: {},
             charNotifies: {},
+
             init: function(readyFn, errorFn) {
                 function stateCB(state) {
                     if (state === "poweredOn") {
@@ -72,6 +73,7 @@
                                     serviceUUIDs.push(bleat._canonicalUUID(serviceUUID));
                                 });
                                 var device = new bleat._Device(address, deviceInfo.advertisement.localName || address, serviceUUIDs);
+                                device.serviceData = deviceInfo.advertisement.serviceData;
                                 this.foundFn(device);
                             }
                         }.bind(this));
@@ -175,6 +177,10 @@
                 this.characteristicHandles[characteristic._handle].write(buffer, true, checkForError(errorFn, completeFn));
             },
             enableNotify: function(characteristic, notifyFn, completeFn, errorFn) {
+                if (this.charNotifies[characteristic.uuid]) {
+                    this.charNotifies[characteristic.uuid] = notifyFn;
+                    return completeFn();
+                }
                 this.characteristicHandles[characteristic._handle].once("notify", function(state) {
                     if (state !== true) return errorFn("notify failed to enable");
                     this.charNotifies[characteristic.uuid] = notifyFn;
@@ -183,6 +189,9 @@
                 this.characteristicHandles[characteristic._handle].notify(true, checkForError(errorFn));
             },
             disableNotify: function(characteristic, completeFn, errorFn) {
+                if (!this.charNotifies[characteristic.uuid]) {
+                    return completeFn();
+                }
                 this.characteristicHandles[characteristic._handle].once("notify", function(state) {
                     if (state !== false) return errorFn("notify failed to disable");
                     if (this.charNotifies[characteristic.uuid]) delete this.charNotifies[characteristic.uuid];
