@@ -5,7 +5,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015
+ * Copyright (c) 2016 Rob Moran
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,47 +30,33 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['bleat.core'], factory.bind(this));
+        define(['bleat', 'bluetooth.helpers'], factory);
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory(require('./bleat.core'));
+        module.exports = function(bleat) {
+            return factory(bleat, require('./bluetooth.helpers'));
+        };
     } else {
         // Browser globals with support for web workers (root is window)
-        factory(root.bleat);
+        factory(root.bleat, root.bleatHelpers);
     }
-}(this, function(bleat) {
+}(this, function(bleat, helpers) {
     "use strict";
 
-    if (adapter_exists) {
-        bleat._addAdapter("adapter_name", {
-            init: function(readyFn, errorFn) {
-            },
-            scan: function(foundFn, errorFn) {
-            },
-            stop: function(errorFn) {
-            },
-            connect: function(device, connectFn, disconnectFn, errorFn) {
-            },
-            disconnect: function(device, errorFn) {
-            },
-            discoverServices: function(device, completeFn, errorFn) {
-            },
-            discoverCharacteristics: function(service, completeFn, errorFn) {
-            },
-            discoverDescriptors: function(characteristic, completeFn, errorFn) {
-            },
-            readCharacteristic: function(characteristic, completeFn, errorFn) {
-            },
-            writeCharacteristic: function(characteristic, bufferView, completeFn, errorFn) {
-            },
-            enableNotify: function(characteristic, notifyFn, completeFn, errorFn) {
-            },
-            disableNotify: function(characteristic, completeFn, errorFn) {
-            },
-            readDescriptor: function(descriptor, completeFn, errorFn) {
-            },
-            writeDescriptor: function(descriptor, bufferView, completeFn, errorFn) {
-            }
-        });
-    }
+    bleat._addAdapter("template", {
+        startScan: function(serviceUUIDs, foundFn, completeFn, errorFn) {},
+        stopScan: function(errorFn) {},
+        connect: function(handle, connectFn, disconnectFn, errorFn) {},
+        disconnect: function(handle, errorFn) {},
+        discoverServices: function(handle, serviceUUIDs, completeFn, errorFn) {},
+        discoverIncludedServices: function(handle, serviceUUIDs, completeFn, errorFn) {},
+        discoverCharacteristics: function(handle, characteristicUUIDs, completeFn, errorFn) {},
+        discoverDescriptors: function(handle, descriptorUUIDs, completeFn, errorFn) {},
+        readCharacteristic: function(handle, completeFn, errorFn) {},
+        writeCharacteristic: function(handle, dataView, completeFn, errorFn) {},
+        enableNotify: function(handle, notifyFn, completeFn, errorFn) {},
+        disableNotify: function(handle, completeFn, errorFn) {},
+        readDescriptor: function(handle, completeFn, errorFn) {},
+        writeDescriptor: function(handle, dataView, completeFn, errorFn) {}
+    });
 }));

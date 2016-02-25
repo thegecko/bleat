@@ -30,10 +30,12 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['bleat.core'], factory.bind(this, root, root.cordova));
+        define(['bleat'], factory.bind(this, root, root.cordova));
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory(root, root.cordova, require('./bleat.core'));
+        module.exports = function(bleat) {
+            return factory(root, root.cordova, bleat);
+        };
     } else {
         // Browser globals with support for web workers (root is window)
         factory(root, root.cordova, root.bleat);

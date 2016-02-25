@@ -1,5 +1,8 @@
 requirejs.config({
 	baseUrl: 'dist',
+	paths: {
+		bleat: 'api.classic'
+	},
 	shim: {
 		cordova: {
 			exports: 'cordova'
@@ -8,9 +11,10 @@ requirejs.config({
 });
 
 require([
-	'bleat.core',
-    'bleat.evothings'
-], function (bleat) {
+	'bluetooth.helpers',
+	'bleat',
+	'adapter.evothings'
+], function(helpers, bleat) {
 
 	var statusEl = document.getElementById("status");
 

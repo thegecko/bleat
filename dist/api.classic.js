@@ -1,6 +1,6 @@
 /* @license
  *
- * BLE Abstraction Tool: core functionality - bleat specification
+ * BLE Abstraction Tool: core functionality - classic specification
  * Version: 0.0.15
  *
  * The MIT License (MIT)
@@ -30,15 +30,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(factory);
+        define(['bluetooth.helpers'], factory);
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
-        module.exports = factory();
+        module.exports = factory(require('./bluetooth.helpers'));
     } else {
         // Browser globals with support for web workers (root is window)
-        root.bleat = factory();
+        root.bleat = factory(root.bleatHelpers);
     }
-}(this, function() {
+}(this, function(helpers) {
     "use strict";
 
     var adapter = null;
@@ -75,14 +75,6 @@
         this.finish = function() {
             if (!callbackAdded && finishFn) finishFn();
         };
-    }
-
-    function canonicalUUID(uuid) {
-        if (typeof uuid === "number") uuid = uuid.toString(16);
-        if (uuid.length <= 8) uuid = ("00000000" + uuid).slice(-8) + "-0000-1000-8000-00805f9b34fb";
-        uuid = uuid.toLowerCase();
-        if (uuid.length === 32) uuid = uuid.match(/^([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{12})$/).splice(1).join("-");
-        return uuid;
     }
 
     // Device Object
@@ -219,7 +211,6 @@
         _Service: Service,
         _Characteristic: Characteristic,
         _Descriptor: Descriptor,
-        _canonicalUUID: canonicalUUID,
         _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
@@ -228,7 +219,7 @@
             onError = errorFn;
             if (adapterName) adapter = adapters[adapterName];
             if (!adapter) return raiseError("init error")("adapter not found");
-            adapter.init(executeFn(readyFn), raiseError("init error"));
+            readyFn();
         },
         startScan: function(serviceUUIDs, foundFn) {
             if (typeof serviceUUIDs === "function") {
