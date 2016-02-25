@@ -21,10 +21,12 @@ string adapterName: when multiple adapters available, specify which to use
 Start scanning for devices.
 
 ```
-void bleat.startScan(foundFn);
+void bleat.startScan(foundFn, [completeFn]);
 ```
 
 function foundFn(device): callback function for each device discovered.
+
+function completeFn(): callback if/when scanning stops
 
 #### bleat.stopScan
 
@@ -43,6 +45,8 @@ string device.name: name of device
 bool device.connected: whether device is connected
 
 string array device.serviceUUIDs: array of advertised services
+
+object adData: map of advertisement data
 
 object services: map of device services keyed on service uuid (available once connected)
 
@@ -80,23 +84,25 @@ void device.disconnect();
 
 #### device.discoverServices
 
-Discover all services for this device
+Discover services for this device
 
 ```
-void device.discoverServices(callbackFn)
+void device.discoverServices([serviceUUIDs], completeFn)
 ```
 
-function callbackFn(): callback once discovery complete
+string array serviceUUIDs: array of service uuids to restrict to
+
+function completeFn(): callback once discovery complete
 
 #### device.discoverAll
 
 Discover all services, characteristics and descriptors for this device
 
 ```
-void device.discoverAll(callbackFn)
+void device.discoverAll(completeFn)
 ```
 
-function callbackFn(): callback once discovery complete
+function completeFn(): callback once discovery complete
 
 ### Service
 
@@ -104,23 +110,39 @@ string uuid: uuid of service
 
 bool primary: whether service is primary or not
 
+object includedServices: map of included services keyed on service uuid
+
 object characteristics: map of service characteristics keyed on characteristic uuid
+
+#### service.discoverIncludedServices
+
+Discover included services for this service
+
+```
+void service.discoverIncludedServices([serviceUUIDs], completeFn)
+```
+
+string array serviceUUIDs: array of service uuids to restrict to
+
+function completeFn(): callback once discovery complete
 
 #### service.discoverCharacteristics
 
-Discover all characteristics for this service
+Discover characteristics for this service
 
 ```
-void service.discoverCharacteristics(callbackFn)
+void service.discoverCharacteristics([characteristicUUIDs], completeFn)
 ```
 
-function callbackFn(): callback once discovery complete
+string array characteristicUUIDs: array of characteristic uuids to restrict to
+
+function completeFn(): callback once discovery complete
 
 ### Characteristic
 
 string uuid: uuid of characteristic
 
-string array properties: characteristic properties
+object properties: map of characteristic properties
 
 object descriptors: map of characteristic descriptors keyed on descriptor uuid
 
@@ -132,17 +154,17 @@ Read value of characteristic.
 void characteristic.read(completeFn);
 ```
 
-function completeFn(ArrayBuffer): callback function containing value
+function completeFn(DataView): callback function containing value
 
 #### characteristic.write
 
 Write value to characteristic.
 
 ```
-void characteristic.write(bufferView, completeFn);
+void characteristic.write(dataView, completeFn);
 ```
 
-DataView bufferView: value to write
+DataView dataView: value to write
 
 function completeFn(): callback function once completed
 
@@ -154,7 +176,7 @@ Enable notifications when characteristic value changes.
 void characteristic.enableNotify(notifyFn, completeFn);
 ```
 
-function notifyFn(ArrayBuffer): callback function containing value when changes
+function notifyFn(DataView): callback function containing value when changes
 
 function completeFn(): callback function once completed
 
@@ -170,13 +192,15 @@ function completeFn(): callback function once completed
 
 #### characteristic.discoverDescriptors
 
-Discover all descriptors for this characteristic
+Discover descriptors for this characteristic
 
 ```
-void characteristic.discoverDescriptors(callbackFn)
+void characteristic.discoverDescriptors([descriptorUUIDs], completeFn)
 ```
 
-function callbackFn(): callback once discovery complete
+string array descriptorUUIDs: array of descriptor uuids to restrict to
+
+function completeFn(): callback once discovery complete
 
 ### Descriptor
 
@@ -190,15 +214,15 @@ Read value of descriptor.
 void descriptor.read(completeFn);
 ```
 
-function completeFn(ArrayBuffer): callback function containing value
+function completeFn(DataView): callback function containing value
 
 #### descriptor.write
 
 Write value to descriptor.
 
 ```
-void descriptor.write(bufferView, completeFn);
+void descriptor.write(dataView, completeFn);
 ```
 
-DataView bufferView: value to write
+DataView dataView: value to write
 function completeFn(): callback function once completed
