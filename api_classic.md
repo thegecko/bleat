@@ -225,4 +225,5 @@ void descriptor.write(dataView, completeFn);
 ```
 
 DataView dataView: value to write
+
 function completeFn(): callback function once completed

@@ -7,96 +7,92 @@
 
 Bleat (Blutooth Low Energy Abstraction Tool) provides a simplified BLE layer which uses adapters to abstract the usage of BLE in JavaScript on different platforms.
 
+## APIs
+
+Bleat has 2 APIs:
+
+ * The [Classic API](api_classic.md), originally developed for this project
+ * The [Web Bluetooth API](https://webbluetoothcg.github.io/web-bluetooth/) specification developed for use in browsers
+
 ## Installation
+
+To install the library, either clone or copy the files to your project or use a package manager:
 
 ```
 npm install bleat
-      -or-
+```
+-or-
+```
 bower install bleat
 ```
 
 ## Usage
 
-The main `bleat.core.js` file offers the BLE layer while each `bleat.<platform>.js` file represents an adapter.
-The `bleat.js` file contains the BLE layer and all adapters concatenated together (not minified).
-The `bleat.min.js` file is a minified version of the BLE layer and all adapters.
+The ```bluetooth.helpers.js``` file contains general helper objects and functions.
 
-Files follow the UMD (https://github.com/umdjs/umd), so should work with AMD (requirejs), CommonJS (node) and plain JavaScript projects.
+The ```api.<api>.js``` files each offer a BLE API.
 
-Refer to the `example_<adapter>` files for simple examples.
+The ```adapter.<platform>.js``` files each represent an adapter targetting a specific BLE engine, the ```adapter-template.js``` file is an empty template to ease creation of a new adapter.
+
+The ```api.<api>.min.js` files are minified versions of the BLE APIs and include the helpers and all adapters.
+
+Files follow the [UMDJS](https://github.com/umdjs/umd) specification, so should work with CommonJS (such as [node.js](https://nodejs.org/)), AMD (such as [RequireJS](http://requirejs.org/)) and plain JavaScript projects.
+
+Refer to the ```example_<adapter>_<api>``` files and folders for simple examples of how to use each combination.
+
+### CommonJS (node.js)
+
+Simply require it up, specifying the api you wish to use:
+
+```
+var bleat = require('bleat').classic;
+```
+-or-
+```
+var bleat = require('bleat').webbluetooth;
+```
+
+### AMD (RequireJS)
+
+To use bleat with [RequireJS](http://requirejs.org/), set the ```requirejs.config``` to load your API of choice as ```bleat``` and add a dependency on your adapter of choice:
+
+```
+requirejs.config({
+	baseUrl: 'path/to/bleat',
+	paths: {
+		bleat: 'api.classic',
+		adapter: 'adapter.evothings'
+	},
+	shim: {
+		bleat: {
+			deps: ['adapter']
+		}
+	}
+});
+```
+
+You can then use bleat as follows:
+
+```
+require(['bleat'], function(bleat) {
+	// Use bleat here
+});
+```
 
 ### Plain JavaScript (globals)
 
-Include (or require) the `bleat.core.js` file before the adapter you wish to use or include the minified file offering all adapters.
-
-e.g.
+Include the ```bluetooth.helpers.js``` file, then the bleat api file you wish to use and finally the adapter file you wish to use:
 
 ```
-<script src="path/to/bleat.core.js"></script>
-<script src="path/to/bleat.<adapter>.js"></script>
-      -or-
-<script src="path/to/bleat.min.js"></script>
+<script src="path/to/bluetooth.helpers.js"></script>
+<script src="path/to/api.classic.js"></script>
+<script src="path/to/adapter.evothings.js"></script>
 ```
 
-### Node.js
-
-Simply require it up!
+Alternatively, you can just include the minified API including all adapters:
 
 ```
-var bleat = require('bleat');
+<script src="path/to/api.web-bluetooth.min.js"></script>
 ```
 
-See the [Classic API](api_classic.md) for more information.
-
-Bleat (Blutooth Low Energy Abstraction Tool) provides a simplified BLE layer which uses adapters to abstract the usage of BLE in JavaScript on different platforms.
-
-Follows the [Web Bluetooth](https://webbluetoothcg.github.io/web-bluetooth/) API specification.
-
-## Installation
-
-```
-npm install bleat
-      -or-
-bower install bleat
-```
-
-## Usage
-
-The main `bleat.core.js` file offers the BLE layer while each `bleat.<platform>.js` file represents an adapter.
-The `bleat.js` file contains the BLE layer and all adapters concatenated together (not minified).
-The `bleat.min.js` file is a minified version of the BLE layer and all adapters.
-
-Files follow the UMD (https://github.com/umdjs/umd), so should work with AMD (requirejs), CommonJS (node) and plain JavaScript projects.
-
-Refer to the `example_<adapter>` files for simple examples.
-
-### Plain JavaScript (globals)
-
-Include (or require) the `bleat.core.js` file before the adapter you wish to use or include the minified file offering all adapters.
-
-e.g.
-
-```
-<script src="path/to/bleat.core.js"></script>
-<script src="path/to/bleat.<adapter>.js"></script>
-```
-
-### Node.js
-
-Simply require it up!
-
-```
-var bleat = require('bleat');
-```
-
-### To Do
- * Merge back to master with API/interface type; bleat.classic or bleat.web-bluetooth
- * Add requestDevice() callback hook to allow headless implementations select a device
- * Implement service filtering based on filters and optional services passed in
- * Implement BluetoothRemoteGATTService servicechanged / serviceremoved events
- * Evothings adapter
- * ChromeOS adapter
-
-Specification Updates:
- * https://github.com/WebBluetoothCG/web-bluetooth/pull/174
- * https://github.com/WebBluetoothCG/web-bluetooth/pull/187
+A global object ```root.bleat``` will then be availble to use.

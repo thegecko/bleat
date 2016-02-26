@@ -1,4 +1,4 @@
-var bluetooth = require('./index').webBluetooth;
+var bluetooth = require('./index').webbluetooth;
 var gattServer;
 var heartChar;
 

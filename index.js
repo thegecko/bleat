@@ -5,7 +5,7 @@ module.exports = {
 		require('./dist/adapter.noble')(bluetooth);
 		return bluetooth;
 	},
-	get webBluetooth() {
+	get webbluetooth() {
 		var bluetooth = require('./dist/api.web-bluetooth');
 		require('./dist/adapter.noble')(bluetooth);
 		return bluetooth;
