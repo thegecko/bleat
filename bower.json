@@ -1,6 +1,6 @@
 {
   "name": "bleat",
-  "description": "Abstraction library for hiding differences in JavaScript BLE APIs",
+  "description": "Abstraction library following Web Bluetooth specification for hiding differences in JavaScript BLE APIs",
   "homepage": "https://github.com/thegecko/bleat",
   "authors": "Rob Moran <rob@thegecko.org>",
   "license": "MIT",
@@ -9,6 +9,7 @@
     "url": "git://github.com/thegecko/bleat.git"
   },
   "keywords": [
+    "web-bluetooth",
     "bleat",
     "ble",
     "bluetooth",
