@@ -95,4 +95,4 @@ Alternatively, you can just include the minified API including all adapters:
 <script src="path/to/api.web-bluetooth.min.js"></script>
 ```
 
-A global object ```root.bleat``` will then be availble to use.
+A global object ```root.bleat``` will then be available to use.
