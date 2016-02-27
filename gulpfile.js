@@ -2,6 +2,9 @@ var gulp = require('gulp');
 var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglifyjs');
 
+var apis = ['classic', 'web-bluetooth'];
+var adapters = ['chromeos', 'evothings', 'noble'];
+
 gulp.task('lint', function() {
     return gulp.src(['dist/*.js', '!dist/*.min.js'])
         .pipe(jshint())
@@ -9,13 +12,20 @@ gulp.task('lint', function() {
 });
 
 gulp.task('release', function() {
-    minify('classic');
-    minify('web-bluetooth');
+    apis.forEach(api => {
+        adapters.forEach(adapter => {
+            minify(api, adapter);
+        });
+    });
 });
 
-function minify(api) {
-    return gulp.src(['dist/bluetooth.helpers.js', 'dist/api.' + api + '.js', 'dist/adapter.*.js'])
-        .pipe(uglify('api.' + api + '.min.js', {
+function minify(api, adapter) {
+    return gulp.src([
+            'dist/bluetooth.helpers.js',
+            'dist/api.' + api + '.js',
+            'dist/adapter.' + adapter + '.js'
+        ])
+        .pipe(uglify(api + '.' + adapter + '.min.js', {
             output: {
                 comments: /@license/
             }
