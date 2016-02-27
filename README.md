@@ -34,7 +34,7 @@ The ```api.<api>.js``` files each offer a BLE API.
 
 The ```adapter.<platform>.js``` files each represent an adapter targetting a specific BLE engine, the ```adapter-template.js``` file is an empty template to ease creation of a new adapter.
 
-The ```api.<api>.min.js` files are minified versions of the BLE APIs and include the helpers and all adapters.
+The ```api.<api>.min.js``` files are minified versions of the BLE APIs and include the helpers and all adapters.
 
 Files follow the [UMDJS](https://github.com/umdjs/umd) specification, so should work with CommonJS (such as [node.js](https://nodejs.org/)), AMD (such as [RequireJS](http://requirejs.org/)) and plain JavaScript projects.
 
