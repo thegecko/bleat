@@ -2,39 +2,29 @@
 
 ### bleat
 
-#### bleat.init
-
-Initialise bleat.
-
-```
-void bleat.init([readyFn], [errorFn], [adapterName]);
-```
-
-function readyFn(): callback function once init has completed
-
-function errorFn(message): callback function for all errors while bleating
-
-string adapterName: when multiple adapters available, specify which to use
-
 #### bleat.startScan
 
 Start scanning for devices.
 
 ```
-void bleat.startScan(foundFn, [completeFn]);
+void bleat.startScan(foundFn, [completeFn], [errorFn]);
 ```
 
 function foundFn(device): callback function for each device discovered.
 
 function completeFn(): callback if/when scanning stops
 
+function errorFn(errorMsg): callback containing error if one occurs
+
 #### bleat.stopScan
 
 Stop scanning for devices.
 
 ```
-void bleat.stopScan();
+void bleat.stopScan([errorFn]);
 ```
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 ### device
 
@@ -65,12 +55,14 @@ string serviceUUID: service to search for
 Connect to the device.
 
 ```
-void device.connect(connectFn, [disconnectFn], [suppressDiscovery]);
+void device.connect(connectFn, [disconnectFn], [errorFn], [suppressDiscovery]);
 ```
 
 function connectFn(): callback once connected
 
 function disconnectFn(): callback when disconnected
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 bool suppressDiscovery: don't undertake automatic discovery of services, characteristics and descriptors
 
@@ -79,30 +71,36 @@ bool suppressDiscovery: don't undertake automatic discovery of services, charact
 Disconnect from device.
 
 ```
-void device.disconnect();
+void device.disconnect([errorFn]);
 ```
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 #### device.discoverServices
 
 Discover services for this device
 
 ```
-void device.discoverServices([serviceUUIDs], completeFn)
+void device.discoverServices([serviceUUIDs], [completeFn], [errorFn])
 ```
 
 string array serviceUUIDs: array of service uuids to restrict to
 
 function completeFn(): callback once discovery complete
 
+function errorFn(errorMsg): callback containing error if one occurs
+
 #### device.discoverAll
 
 Discover all services, characteristics and descriptors for this device
 
 ```
-void device.discoverAll(completeFn)
+void device.discoverAll([completeFn], [errorFn])
 ```
 
 function completeFn(): callback once discovery complete
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 ### Service
 
@@ -119,24 +117,28 @@ object characteristics: map of service characteristics keyed on characteristic u
 Discover included services for this service
 
 ```
-void service.discoverIncludedServices([serviceUUIDs], completeFn)
+void service.discoverIncludedServices([serviceUUIDs], [completeFn], [errorFn])
 ```
 
 string array serviceUUIDs: array of service uuids to restrict to
 
 function completeFn(): callback once discovery complete
 
+function errorFn(errorMsg): callback containing error if one occurs
+
 #### service.discoverCharacteristics
 
 Discover characteristics for this service
 
 ```
-void service.discoverCharacteristics([characteristicUUIDs], completeFn)
+void service.discoverCharacteristics([characteristicUUIDs], [completeFn], [errorFn])
 ```
 
 string array characteristicUUIDs: array of characteristic uuids to restrict to
 
 function completeFn(): callback once discovery complete
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 ### Characteristic
 
@@ -151,56 +153,66 @@ object descriptors: map of characteristic descriptors keyed on descriptor uuid
 Read value of characteristic.
 
 ```
-void characteristic.read(completeFn);
+void characteristic.read(completeFn, [errorFn]);
 ```
 
 function completeFn(DataView): callback function containing value
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 #### characteristic.write
 
 Write value to characteristic.
 
 ```
-void characteristic.write(dataView, completeFn);
+void characteristic.write(dataView, [completeFn], [errorFn]);
 ```
 
 DataView dataView: value to write
 
 function completeFn(): callback function once completed
 
+function errorFn(errorMsg): callback containing error if one occurs
+
 #### characteristic.enableNotify
 
 Enable notifications when characteristic value changes.
 
 ```
-void characteristic.enableNotify(notifyFn, completeFn);
+void characteristic.enableNotify(notifyFn, [completeFn], [errorFn]);
 ```
 
 function notifyFn(DataView): callback function containing value when changes
 
 function completeFn(): callback function once completed
 
+function errorFn(errorMsg): callback containing error if one occurs
+
 #### characteristic.disableNotify
 
 Disable characteristic notifications.
 
 ```
-void characteristic.disableNotify(completeFn);
+void characteristic.disableNotify([completeFn], [errorFn]);
 ```
 
 function completeFn(): callback function once completed
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 #### characteristic.discoverDescriptors
 
 Discover descriptors for this characteristic
 
 ```
-void characteristic.discoverDescriptors([descriptorUUIDs], completeFn)
+void characteristic.discoverDescriptors([descriptorUUIDs], [completeFn], [errorFn])
 ```
 
 string array descriptorUUIDs: array of descriptor uuids to restrict to
 
 function completeFn(): callback once discovery complete
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 ### Descriptor
 
@@ -211,19 +223,23 @@ string uuid: uuid of descriptor
 Read value of descriptor.
 
 ```
-void descriptor.read(completeFn);
+void descriptor.read(completeFn, [errorFn]);
 ```
 
 function completeFn(DataView): callback function containing value
+
+function errorFn(errorMsg): callback containing error if one occurs
 
 #### descriptor.write
 
 Write value to descriptor.
 
 ```
-void descriptor.write(dataView, completeFn);
+void descriptor.write(dataView, [completeFn], [errorFn]);
 ```
 
 DataView dataView: value to write
 
 function completeFn(): callback function once completed
+
+function errorFn(errorMsg): callback containing error if one occurs

@@ -45,10 +45,9 @@
     var adapters = {};
 
     // Helpers
-    var onError = null;
-    function raiseError(msg) {
+    function raiseError(errorFn, msg) {
         return function(error) {
-            if (onError) onError(msg + ": " + error);
+            if (errorFn) errorFn(msg + ": " + error);
         };
     }
 
@@ -61,7 +60,7 @@
         };
     }
 
-    function AsyncWait(finishFn) {
+    function AsyncWait(finishFn, errorFn) {
         var count = 0;
         var callbackAdded = false;
         this.addCallback = function(fn) {
@@ -71,6 +70,10 @@
                 if (fn) fn.apply(null, arguments);
                 if (--count === 0 && finishFn) finishFn();
             };
+        };
+        this.error = function() {
+            if (errorFn) errorFn.apply(null, arguments);
+            if (--count === 0 && finishFn) finishFn();
         };
         this.finish = function() {
             if (!callbackAdded && finishFn) finishFn();
@@ -92,22 +95,26 @@
             return (uuid === serviceUUID);
         });
     };
-    Device.prototype.connect = function(connectFn, disconnectFn, suppressDiscovery) {
+    Device.prototype.connect = function(connectFn, disconnectFn, errorFn, suppressDiscovery) {
         adapter.connect(this.address, function() {
             this.connected = true;
+            if (typeof errorFn === "boolean") {
+                suppressDiscovery = errorFn;
+                errorFn = null;
+            }
             if (suppressDiscovery) return executeFn(connectFn)();
-            this.discoverAll(connectFn);
+            this.discoverAll(connectFn, errorFn);
         }.bind(this), function() {
             this.connected = false;
             this.services = {};
             executeFn(disconnectFn)();
-        }.bind(this), raiseError("connect error"));
+        }.bind(this), raiseError(errorFn, "connect error"));
     };
-    Device.prototype.disconnect = function() {
-        adapter.disconnect(this.address, raiseError("disconnect error"));
+    Device.prototype.disconnect = function(errorFn) {
+        adapter.disconnect(this.address, raiseError(errorFn, "disconnect error"));
     };
-    Device.prototype.discoverServices = function(serviceUUIDs, completeFn) {
-        if (this.connected === false) return raiseError("discovery error")("device not connected");
+    Device.prototype.discoverServices = function(serviceUUIDs, completeFn, errorFn) {
+        if (this.connected === false) return raiseError(errorFn, "discovery error")("device not connected");
         if (typeof serviceUUIDs === "function") {
             completeFn = serviceUUIDs;
             serviceUUIDs = [];
@@ -120,27 +127,27 @@
             }, this);
 
             if (completeFn) completeFn();
-        }.bind(this), raiseError("service discovery error"));
+        }.bind(this), raiseError(errorFn, "service discovery error"));
     };
-    Device.prototype.discoverAll = function(completeFn) {
-        if (this.connected === false) return raiseError("discovery error")("device not connected");
-        var wait = new AsyncWait(completeFn);
+    Device.prototype.discoverAll = function(completeFn, errorFn) {
+        if (this.connected === false) return raiseError(errorFn, "discovery error")("device not connected");
+        var wait = new AsyncWait(completeFn, errorFn);
 
         this.discoverServices(wait.addCallback(function() {
             Object.keys(this.services).forEach(function(serviceUUID) {
                 var service = this.services[serviceUUID];
 
-                service.discoverIncludedServices(wait.addCallback());
+                service.discoverIncludedServices(wait.addCallback(), wait.error);
 
                 service.discoverCharacteristics(wait.addCallback(function() {
                     Object.keys(service.characteristics).forEach(function(characteristicUUID) {
                         var characteristic = service.characteristics[characteristicUUID];
-                        characteristic.discoverDescriptors(wait.addCallback());
+                        characteristic.discoverDescriptors(wait.addCallback(), wait.error);
                     }, this);
-                }.bind(this)));
+                }.bind(this)), wait.error);
 
             }, this);
-        }.bind(this)));
+        }.bind(this)), wait.error);
 
         wait.finish();
     };
@@ -153,7 +160,7 @@
         this.includedServices = {};
         this.characteristics = {};
     };
-    Service.prototype.discoverIncludedServices = function(serviceUUIDs, completeFn) {
+    Service.prototype.discoverIncludedServices = function(serviceUUIDs, completeFn, errorFn) {
         if (typeof serviceUUIDs === "function") {
             completeFn = serviceUUIDs;
             serviceUUIDs = [];
@@ -166,9 +173,9 @@
             }, this);
 
             if (completeFn) completeFn();
-        }.bind(this), raiseError("included service discovery error"));
+        }.bind(this), raiseError(errorFn, "included service discovery error"));
     };
-    Service.prototype.discoverCharacteristics = function(characteristicUUIDs, completeFn) {
+    Service.prototype.discoverCharacteristics = function(characteristicUUIDs, completeFn, errorFn) {
         if (typeof characteristicUUIDs === "function") {
             completeFn = characteristicUUIDs;
             characteristicUUIDs = [];
@@ -181,7 +188,7 @@
             }, this);
 
             if (completeFn) completeFn();
-        }.bind(this), raiseError("characteristic discovery error"));
+        }.bind(this), raiseError(errorFn, "characteristic discovery error"));
     };
 
     // Characteristic Object
@@ -191,7 +198,7 @@
 
         this.descriptors = {};
     };
-    Characteristic.prototype.discoverDescriptors = function(descriptorUUIDs, completeFn) {
+    Characteristic.prototype.discoverDescriptors = function(descriptorUUIDs, completeFn, errorFn) {
         if (typeof descriptorUUIDs === "function") {
             completeFn = descriptorUUIDs;
             descriptorUUIDs = [];
@@ -204,19 +211,19 @@
             }, this);
 
             if (completeFn) completeFn();
-        }.bind(this), raiseError("descriptor discovery error"));
+        }.bind(this), raiseError(errorFn, "descriptor discovery error"));
     };
-    Characteristic.prototype.read = function(completeFn) {
-        adapter.readCharacteristic(this.uuid, executeFn(completeFn), raiseError("read characteristic error"));
+    Characteristic.prototype.read = function(completeFn, errorFn) {
+        adapter.readCharacteristic(this.uuid, executeFn(completeFn), raiseError(errorFn, "read characteristic error"));
     };
-    Characteristic.prototype.write = function(dataView, completeFn) {
-        adapter.writeCharacteristic(this.uuid, dataView, executeFn(completeFn), raiseError("write characteristic error"));
+    Characteristic.prototype.write = function(dataView, completeFn, errorFn) {
+        adapter.writeCharacteristic(this.uuid, dataView, executeFn(completeFn), raiseError(errorFn, "write characteristic error"));
     };
-    Characteristic.prototype.enableNotify = function(notifyFn, completeFn) {
-        adapter.enableNotify(this.uuid, executeFn(notifyFn), executeFn(completeFn), raiseError("enable notify error"));
+    Characteristic.prototype.enableNotify = function(notifyFn, completeFn, errorFn) {
+        adapter.enableNotify(this.uuid, executeFn(notifyFn), executeFn(completeFn), raiseError(errorFn, "enable notify error"));
     };
-    Characteristic.prototype.disableNotify = function(completeFn) {
-        adapter.disableNotify(this.uuid, executeFn(completeFn), raiseError("disable notify error"));
+    Characteristic.prototype.disableNotify = function(completeFn, errorFn) {
+        adapter.disableNotify(this.uuid, executeFn(completeFn), raiseError(errorFn, "disable notify error"));
     };
 
     // Descriptor Object
@@ -224,11 +231,11 @@
         this._handle = descriptorInfo._handle;
         this.uuid = descriptorInfo.uuid;
     };
-    Descriptor.prototype.read = function(completeFn) {
-        adapter.readDescriptor(this._handle, executeFn(completeFn), raiseError("read descriptor error"));
+    Descriptor.prototype.read = function(completeFn, errorFn) {
+        adapter.readDescriptor(this._handle, executeFn(completeFn), raiseError(errorFn, "read descriptor error"));
     };
-    Descriptor.prototype.write = function(dataView, completeFn) {
-        adapter.writeDescriptor(this._handle, dataView, executeFn(completeFn), raiseError("write descriptor error"));
+    Descriptor.prototype.write = function(dataView, completeFn, errorFn) {
+        adapter.writeDescriptor(this._handle, dataView, executeFn(completeFn), raiseError(errorFn, "write descriptor error"));
     };
 
     // Main Module
@@ -237,30 +244,24 @@
             adapters[adapterName] = definition;
             adapter = definition;
         },
-        init: function(readyFn, errorFn, adapterName) {
-            onError = errorFn;
-            if (adapterName) adapter = adapters[adapterName];
-            if (!adapter) return raiseError("init error")("adapter not found");
-            readyFn();
-        },
-        startScan: function(serviceUUIDs, foundFn, completeFn) {
+        startScan: function(serviceUUIDs, foundFn, completeFn, errorFn) {
             if (typeof serviceUUIDs === "function") {
                 foundFn = serviceUUIDs;
                 serviceUUIDs = [];
             } else if (typeof serviceUUIDs === "string") {
                 serviceUUIDs = [serviceUUIDs];
             }
-            adapter.stopScan(raiseError("stop scan error"));
+            adapter.stopScan(raiseError(errorFn, "stop scan error"));
             var devices = {};
             adapter.startScan(serviceUUIDs, function(deviceInfo) {
                 var device = new Device(deviceInfo);
                 if (devices[device.address]) return;
                 devices[device.address] = device;
                 if (foundFn) foundFn(device);
-            }.bind(this), completeFn, raiseError("scan error"));
+            }.bind(this), completeFn, raiseError(errorFn, "scan error"));
         },
-        stopScan: function() {
-            adapter.stopScan(raiseError("stop scan error"));
+        stopScan: function(errorFn) {
+            adapter.stopScan(raiseError(errorFn, "stop scan error"));
         }
     };
 }));
