@@ -19,11 +19,11 @@ Bleat has 2 APIs:
 To install the library, either clone or copy the files to your project or use a package manager:
 
 ```
-npm install bleat
+$ npm install bleat
 ```
 -or-
 ```
-bower install bleat
+$ bower install bleat
 ```
 
 ## Usage
@@ -44,11 +44,11 @@ Refer to the ```example_<adapter>_<api>``` files and folders for simple examples
 
 Simply require it up, specifying the api you wish to use:
 
-```
+```node
 var bleat = require('bleat').classic;
 ```
 -or-
-```
+```node
 var bleat = require('bleat').webbluetooth;
 ```
 
@@ -56,7 +56,7 @@ var bleat = require('bleat').webbluetooth;
 
 To use bleat with [RequireJS](http://requirejs.org/), set the ```requirejs.config``` to load your API of choice as ```bleat``` and add a dependency on your adapter of choice:
 
-```
+```js
 requirejs.config({
 	baseUrl: 'path/to/bleat',
 	paths: {
@@ -73,7 +73,7 @@ requirejs.config({
 
 You can then use bleat as follows:
 
-```
+```js
 require(['bleat'], function(bleat) {
 	// Use bleat here
 });
@@ -83,7 +83,7 @@ require(['bleat'], function(bleat) {
 
 Include the ```bluetooth.helpers.js``` file, then the bleat api file you wish to use and finally the adapter file you wish to use:
 
-```
+```html
 <script src="path/to/bluetooth.helpers.js"></script>
 <script src="path/to/api.classic.js"></script>
 <script src="path/to/adapter.evothings.js"></script>
@@ -91,7 +91,7 @@ Include the ```bluetooth.helpers.js``` file, then the bleat api file you wish to
 
 Alternatively, you can just include the minified file which contains the API and adapter you wish to use:
 
-```
+```html
 <script src="path/to/web-bluetooth.chromeos.min.js"></script>
 ```
 
