@@ -28,35 +28,126 @@
 
 // https://github.com/umdjs/umd
 (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(['bleat', 'bluetooth.helpers'], factory);
-    } else if (typeof exports === 'object') {
-        // Node. Does not work with strict CommonJS
-        module.exports = function(bleat) {
-            return factory(bleat, require('./bluetooth.helpers'));
-        };
-    } else {
-        // Browser globals with support for web workers (root is window)
-        factory(root.bleat, root.bleatHelpers);
-    }
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['bleat', 'bluetooth.helpers'], factory);
+	} else if (typeof exports === 'object') {
+		// Node. Does not work with strict CommonJS
+		module.exports = function(bleat) {
+			return factory(bleat, require('./bluetooth.helpers'));
+		};
+	} else {
+		// Browser globals with support for web workers (root is window)
+		factory(root.bleat, root.bleatHelpers);
+	}
 }(this, function(bleat, helpers) {
-    "use strict";
+	"use strict";
 
-    bleat._addAdapter("template", {
-        startScan: function(serviceUUIDs, foundFn, completeFn, errorFn) {},
-        stopScan: function(errorFn) {},
-        connect: function(handle, connectFn, disconnectFn, errorFn) {},
-        disconnect: function(handle, errorFn) {},
-        discoverServices: function(handle, serviceUUIDs, completeFn, errorFn) {},
-        discoverIncludedServices: function(handle, serviceUUIDs, completeFn, errorFn) {},
-        discoverCharacteristics: function(handle, characteristicUUIDs, completeFn, errorFn) {},
-        discoverDescriptors: function(handle, descriptorUUIDs, completeFn, errorFn) {},
-        readCharacteristic: function(handle, completeFn, errorFn) {},
-        writeCharacteristic: function(handle, dataView, completeFn, errorFn) {},
-        enableNotify: function(handle, notifyFn, completeFn, errorFn) {},
-        disableNotify: function(handle, completeFn, errorFn) {},
-        readDescriptor: function(handle, completeFn, errorFn) {},
-        writeDescriptor: function(handle, dataView, completeFn, errorFn) {}
-    });
+	bleat._addAdapter("<template-name>", {
+
+		// Begin scanning for devices
+		startScan: function(
+			serviceUUIDs,	// String[] serviceUUIDs		advertised service UUIDs to restrict results by
+			foundFn,		// Function(Object deviceInfo)	function called with each discovered deviceInfo
+			completeFn,		// Function()					function called when scanning completed
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Stop scanning for devices
+		stopScan: function(
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Connect to a device
+		connect: function(
+			handle,			// String handle				device handle
+			connectFn,		// Function()					function called when device connected
+			disconnectFn,	// Function()					function called when device disconnected
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Disconnect from a device
+		disconnect: function(
+			handle,			// String handle				device handle
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Discover services on a device
+		discoverServices: function(
+			handle,			// String handle					device handle
+			serviceUUIDs,	// String[] serviceUUIDs			service UUIDs to restrict results by
+			completeFn,		// Function(Object[] serviceInfo)	function called when discovery completed
+			errorFn			// Function(String errorMsg)		function called if error occurs
+		) {},
+
+		// Discover included services on a service
+		discoverIncludedServices: function(
+			handle,			// String handle					service handle
+			serviceUUIDs,	// String[] serviceUUIDs			service UUIDs to restrict results by
+			completeFn,		// Function(Object[] serviceInfo)	function called when discovery completed
+			errorFn			// Function(String errorMsg)		function called if error occurs
+		) {},
+
+		// Discover characteristics on a service
+		discoverCharacteristics: function(
+			handle,					// String handle							service handle
+			characteristicUUIDs,	// String[] characteristicUUIDs				characteristic UUIDs to restrict results by
+			completeFn,				// Function(Object[] characteristicInfo)	function called when discovery completed
+			errorFn					// Function(String errorMsg)				function called if error occurs
+		) {},
+
+		// Discover descriptors on a characteristic
+		discoverDescriptors: function(
+			handle,				// String handle						characteristic handle
+			descriptorUUIDs,	// String[] descriptorUUIDs				descriptor UUIDs to restrict results by
+			completeFn,			// Function(Object[] descriptorInfo)	function called when discovery completed
+			errorFn				// Function(String errorMsg)			function called if error occurs
+		) {},
+
+		// Read a characteristic value
+		readCharacteristic: function(
+			handle,			// String handle				characteristic handle
+			completeFn,		// Function(DataView value)		function called when read completes
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Write a characteristic value
+		writeCharacteristic: function(
+			handle,			// String handle				characteristic handle
+			value,			// DataView value				value to write
+			completeFn,		// Function(DataView value)		function called when write completes
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Enable value change notifications on a characteristic
+		enableNotify: function(
+			handle,			// String handle				characteristic handle
+			notifyFn,		// Function(DataView value)		function called when value changes
+			completeFn,		// Function()					function called when notifications enabled
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Disable value change notifications on a characteristic
+		disableNotify: function(
+			handle,			// String handle				characteristic handle
+			completeFn,		// Function()					function called when notifications disabled
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Read a descriptor value
+		readDescriptor: function(
+			handle,			// String handle				descriptor handle
+			completeFn,		// Function(DataView value)		function called when read completes
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {},
+
+		// Write a descriptor value
+		writeDescriptor: function(
+			handle,			// String handle				descriptor handle
+			value,			// DataView value				value to write
+			completeFn,		// Function()					function called when write completes
+			errorFn			// Function(String errorMsg)	function called if error occurs
+		) {}
+
+	});
 }));
