@@ -182,7 +182,7 @@
 		)
 	{
 		// Not implemented in the BLE plugin.
-        completeFn([]);
+		completeFn([]);
 	};
 
 	// Discover characteristics on a service
@@ -198,10 +198,10 @@
 			return;
 		}
 
-        evothings.ble.characteristics(
-        	deviceHandle,
-        	handle,
-        	function(characteristics) {
+		evothings.ble.characteristics(
+			deviceHandle,
+			handle,
+			function(characteristics) {
 
 				// Collect found characteristics.
 				var discoveredCharacteristics = [];
@@ -223,7 +223,7 @@
 
 						// Add the characteristic.
 						// For the characteristic property constants, see:
-						//   https://github.com/evothings/cordova-ble/blob/master/ble.js#L256
+						//	 https://github.com/evothings/cordova-ble/blob/master/ble.js#L256
 						// Goes without saying they should have symbolic names!!
 						// Created issue: https://github.com/evothings/cordova-ble/issues/90
 						discoveredCharacteristics.push(
@@ -231,27 +231,27 @@
 								_handle: characteristicInfo.handle,
 								uuid: characteristicUUID,
 								properties: {
-                                    broadcast:
-                                    	characteristicInfo.property & 1,
-                                    read:
-                                    	characteristicInfo.property & 2,
-                                    writeWithoutResponse:
-                                    	(characteristicInfo.property & 4) && // AND or OR?
-                                    	(characteristicInfo.writeType & 1),
-                                    write:
-                                    	characteristicInfo.property & 8,
-                                    notify:
-                                    	characteristicInfo.property & 16,
-                                    indicate:
-                                    	characteristicInfo.property & 32,
-                                    authenticatedSignedWrites:
-                                    	(characteristicInfo.property & 64) && // AND or OR?
-                                    	(characteristicInfo.writeType & 4),
-                                    reliableWrite:
-                                    	false,
-                                    writableAuxiliaries:
-                                    	false
-                                }
+									broadcast:
+										characteristicInfo.property & 1,
+									read:
+										characteristicInfo.property & 2,
+									writeWithoutResponse:
+										(characteristicInfo.property & 4) && // AND or OR?
+										(characteristicInfo.writeType & 1),
+									write:
+										characteristicInfo.property & 8,
+									notify:
+										characteristicInfo.property & 16,
+									indicate:
+										characteristicInfo.property & 32,
+									authenticatedSignedWrites:
+										(characteristicInfo.property & 64) && // AND or OR?
+										(characteristicInfo.writeType & 4),
+									reliableWrite:
+										false,
+									writableAuxiliaries:
+										false
+								}
 							});
 					}
 				});
@@ -260,7 +260,7 @@
 				if (completeFn) {
 					completeFn(discoveredCharacteristics);
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -279,10 +279,10 @@
 			return;
 		}
 
-        evothings.ble.descriptors(
-        	deviceHandle,
-        	handle,
-        	function(descriptors) {
+		evothings.ble.descriptors(
+			deviceHandle,
+			handle,
+			function(descriptors) {
 
 				// Collect found descriptors.
 				var discoveredDescriptors = [];
@@ -318,7 +318,7 @@
 				if (completeFn) {
 					completeFn(discoveredDescriptors);
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -340,14 +340,14 @@
 		// https://github.com/evothings/cordova-ble/issues/61
 		// Currently we do not work around this limitation.
 
-        evothings.ble.readCharacteristic(
-        	deviceHandle,
-        	handle,
-        	function(data) {
+		evothings.ble.readCharacteristic(
+			deviceHandle,
+			handle,
+			function(data) {
 				if (completeFn) {
 					completeFn(bufferToDataView(data));
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -366,15 +366,15 @@
 			return;
 		}
 
-        evothings.ble.writeCharacteristic(
-        	deviceHandle,
-        	handle,
-        	value,
-        	function() {
+		evothings.ble.writeCharacteristic(
+			deviceHandle,
+			handle,
+			value,
+			function() {
 				if (completeFn) {
 					completeFn();
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -394,13 +394,13 @@
 		}
 
 		// TODO: Android needs the CCCD written to for notifications
-        // Should be encapsulated in native android layer, see issue:
-        // https://github.com/evothings/cordova-ble/issues/30
+		// Should be encapsulated in native android layer, see issue:
+		// https://github.com/evothings/cordova-ble/issues/30
 
-        // Write the CCCD regardless of platform, makes no harm on iOS.
-        writeCCCD(
-        	deviceHandle,
-        	handle,
+		// Write the CCCD regardless of platform, makes no harm on iOS.
+		writeCCCD(
+			deviceHandle,
+			handle,
 			enableNotification,
 			function(error) {
 				if (errorFn) { errorFn(error); }
@@ -439,14 +439,14 @@
 			return;
 		}
 
-        evothings.ble.disableNotification(
-        	deviceHandle,
-        	handle,
-        	function() {
+		evothings.ble.disableNotification(
+			deviceHandle,
+			handle,
+			function() {
 				if (completeFn) {
 					completeFn();
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -471,14 +471,14 @@
 			return;
 		}
 
-        evothings.ble.readDescriptor(
-        	deviceHandle,
-        	handle,
-        	function(data) {
+		evothings.ble.readDescriptor(
+			deviceHandle,
+			handle,
+			function(data) {
 				if (completeFn) {
 					completeFn(bufferToDataView(data));
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -497,15 +497,15 @@
 			return;
 		}
 
-        evothings.ble.writeDescriptor(
-        	deviceHandle,
-        	handle,
-        	value,
-        	function() {
+		evothings.ble.writeDescriptor(
+			deviceHandle,
+			handle,
+			value,
+			function() {
 				if (completeFn) {
 					completeFn();
 				}
-        	},
+			},
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
@@ -601,7 +601,7 @@
 		{
 			adapter.discoverDescriptors(
 				characteristicHandle,
-				'00002902-0000-1000-8000-00805f9b34fb',	// CCCD UUID
+				'00002902-0000-1000-8000-00805f9b34fb', // CCCD UUID
 				function(descriptors) {
 					var cccdHandle = mCharacteristicHandleToCCCDHandle[characteristicHandle];
 					if (cccdHandle) {
@@ -855,30 +855,30 @@
 
 	/*
 	Not used.
-    function dataViewToBuffer(dataView)
-    {
-        // DataView to TypedArray
-        var typedArray = new Uint8Array(dataView.buffer);
-        return new Buffer(typedArray);
-    }*/
+	function dataViewToBuffer(dataView)
+	{
+		// DataView to TypedArray
+		var typedArray = new Uint8Array(dataView.buffer);
+		return new Buffer(typedArray);
+	}*/
 
-    function getPlatform()
-    {
+	function getPlatform()
+	{
 		if (window.cordova) {
 			return window.cordova.platformId;
 		}
 		else {
 			return null;
 		}
-    }
+	}
 
-    function platformIsIOS()
-    {
+	function platformIsIOS()
+	{
 		return 'ios' === getPlatform();
-    }
+	}
 
-    function platformIsAndroid()
-    {
+	function platformIsAndroid()
+	{
 		return 'android' === getPlatform();
-    }
+	}
 });
