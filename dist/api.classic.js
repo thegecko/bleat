@@ -82,6 +82,8 @@
 
     // Device Object
     var Device = function(deviceInfo) {
+        this._handle = deviceInfo._handle;
+
         this.address = deviceInfo._handle;
         this.name = deviceInfo.name;
         this.serviceUUIDs = deviceInfo.uuids;
@@ -96,7 +98,7 @@
         });
     };
     Device.prototype.connect = function(connectFn, disconnectFn, errorFn, suppressDiscovery) {
-        adapter.connect(this.address, function() {
+        adapter.connect(this._handle, function() {
             this.connected = true;
             if (typeof errorFn === "boolean") {
                 suppressDiscovery = errorFn;
@@ -111,7 +113,7 @@
         }.bind(this), raiseError(errorFn, "connect error"));
     };
     Device.prototype.disconnect = function(errorFn) {
-        adapter.disconnect(this.address, raiseError(errorFn, "disconnect error"));
+        adapter.disconnect(this._handle, raiseError(errorFn, "disconnect error"));
     };
     Device.prototype.discoverServices = function(serviceUUIDs, completeFn, errorFn) {
         if (this.connected === false) return raiseError(errorFn, "discovery error")("device not connected");
@@ -121,7 +123,7 @@
         } else if (typeof serviceUUIDs === "string") {
             serviceUUIDs = [serviceUUIDs];
         }
-        adapter.discoverServices(this.address, serviceUUIDs, function(services) {
+        adapter.discoverServices(this._handle, serviceUUIDs, function(services) {
             services.forEach(function(serviceInfo) {
                 this.services[serviceInfo.uuid] = new Service(serviceInfo);
             }, this);
@@ -154,6 +156,8 @@
 
     // Service Object
     var Service = function(serviceInfo) {
+        this._handle = serviceInfo._handle;
+
         this.uuid = serviceInfo.uuid;
         this.primary = serviceInfo.primary;
 
@@ -167,7 +171,7 @@
         } else if (typeof serviceUUIDs === "string") {
             serviceUUIDs = [serviceUUIDs];
         }
-        adapter.discoverIncludedServices(this.uuid, serviceUUIDs, function(services) {
+        adapter.discoverIncludedServices(this._handle, serviceUUIDs, function(services) {
             services.forEach(function(serviceInfo) {
                 this.includedServices[serviceInfo.uuid] = new Service(serviceInfo);
             }, this);
@@ -182,7 +186,7 @@
         } else if (typeof characteristicUUIDs === "string") {
             characteristicUUIDs = [characteristicUUIDs];
         }
-        adapter.discoverCharacteristics(this.uuid, characteristicUUIDs, function(characteristics) {
+        adapter.discoverCharacteristics(this._handle, characteristicUUIDs, function(characteristics) {
             characteristics.forEach(function(characteristicInfo) {
                 this.characteristics[characteristicInfo.uuid] = new Characteristic(characteristicInfo);
             }, this);
@@ -193,6 +197,8 @@
 
     // Characteristic Object
     var Characteristic = function(characteristicInfo) {
+        this._handle = characteristicInfo._handle;
+
         this.uuid = characteristicInfo.uuid;
         this.properties = characteristicInfo.properties;
 
@@ -205,7 +211,7 @@
         } else if (typeof descriptorUUIDs === "string") {
             descriptorUUIDs = [descriptorUUIDs];
         }
-        adapter.discoverDescriptors(this.uuid, descriptorUUIDs, function(descriptors) {
+        adapter.discoverDescriptors(this._handle, descriptorUUIDs, function(descriptors) {
             descriptors.forEach(function(descriptorInfo) {
                 this.descriptors[descriptorInfo.uuid] = new Descriptor(descriptorInfo);
             }, this);
@@ -214,21 +220,22 @@
         }.bind(this), raiseError(errorFn, "descriptor discovery error"));
     };
     Characteristic.prototype.read = function(completeFn, errorFn) {
-        adapter.readCharacteristic(this.uuid, executeFn(completeFn), raiseError(errorFn, "read characteristic error"));
+        adapter.readCharacteristic(this._handle, executeFn(completeFn), raiseError(errorFn, "read characteristic error"));
     };
     Characteristic.prototype.write = function(dataView, completeFn, errorFn) {
-        adapter.writeCharacteristic(this.uuid, dataView, executeFn(completeFn), raiseError(errorFn, "write characteristic error"));
+        adapter.writeCharacteristic(this._handle, dataView, executeFn(completeFn), raiseError(errorFn, "write characteristic error"));
     };
     Characteristic.prototype.enableNotify = function(notifyFn, completeFn, errorFn) {
-        adapter.enableNotify(this.uuid, executeFn(notifyFn), executeFn(completeFn), raiseError(errorFn, "enable notify error"));
+        adapter.enableNotify(this._handle, executeFn(notifyFn), executeFn(completeFn), raiseError(errorFn, "enable notify error"));
     };
     Characteristic.prototype.disableNotify = function(completeFn, errorFn) {
-        adapter.disableNotify(this.uuid, executeFn(completeFn), raiseError(errorFn, "disable notify error"));
+        adapter.disableNotify(this._handle, executeFn(completeFn), raiseError(errorFn, "disable notify error"));
     };
 
     // Descriptor Object
     var Descriptor = function(descriptorInfo) {
         this._handle = descriptorInfo._handle;
+
         this.uuid = descriptorInfo.uuid;
     };
     Descriptor.prototype.read = function(completeFn, errorFn) {
