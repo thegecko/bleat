@@ -115,7 +115,7 @@
 		writeCharacteristic: function(
 			handle,			// String handle				characteristic handle
 			value,			// DataView value				value to write
-			completeFn,		// Function(DataView value)		function called when write completes
+			completeFn,		// Function()					function called when write completes
 			errorFn			// Function(String errorMsg)	function called if error occurs
 		) {},
 
