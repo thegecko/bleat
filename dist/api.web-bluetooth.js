@@ -74,28 +74,46 @@
     }
 
     function filterDevice(options, deviceInfo) {
-        var valid = options.filters.some(function(filter) {
+        var valid = false;
+        var validServices = [];
+
+        options.filters.forEach(function(filter) {
             // Name
-            if (filter.name && filter.name !== deviceInfo.name) {
-                return false;
-            }
+            if (filter.name && filter.name !== deviceInfo.name) return;
+
             // NamePrefix
             if (filter.namePrefix) {
-                if (filter.namePrefix.length > deviceInfo.name) {
-                    return false;
-                }
-                if (filter.namePrefix !== deviceInfo.name.substr(0, filter.namePrefix.length)) {
-                    return false;
-                }
+                if (filter.namePrefix.length > deviceInfo.name) return;
+                if (filter.namePrefix !== deviceInfo.name.substr(0, filter.namePrefix.length)) return;
             }
+
             // Services
-            if (!filter.services) return true;
-            return filter.services.map(helpers.getServiceUUID).every(function(serviceUUID) {
-                return (deviceInfo.uuids.indexOf(serviceUUID) > -1);
-            });
+            if (filter.services) {
+                var serviceUUIDs = filter.services.map(helpers.getServiceUUID);
+                var servicesValid = serviceUUIDs.every(function(serviceUUID) {
+                    return (deviceInfo.uuids.indexOf(serviceUUID) > -1);
+                });
+
+                if (!servicesValid) return;
+                validServices.concat(serviceUUIDs);
+            }
+
+            valid = true;
         });
 
-        return valid ? deviceInfo : null;
+        if (!valid) return false;
+
+        // Add additional services
+        if (options.optionalServices) {
+            validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
+        }
+
+        // Set unique list of allowed services
+        deviceInfo._allowedServices = validServices.filter(function(item, index, array) {
+            return array.indexOf(item) === index;
+        });
+
+        return deviceInfo;
     }
 
     function scan(options, foundFn, completeFn, errorFn) {
@@ -105,7 +123,6 @@
                 if (filter.services) searchUUIDs = searchUUIDs.concat(filter.services.map(helpers.getServiceUUID));
             });
         }
-
         // Unique-ify
         searchUUIDs = searchUUIDs.filter(function(item, index, array) {
             return array.indexOf(item) === index;
@@ -154,6 +171,7 @@
     // BluetoothDevice Object
     var BluetoothDevice = function(properties) {
         this._handle = null;
+        this._allowedServices = [];
 
         this.id = "unknown"; 
         this.name = null;
@@ -227,8 +245,7 @@
                 resolve(filtered);
             }
             if (this._services) return complete.call(this);
-            adapter.discoverServices(this.device._handle, [], function(services) {
-                // filter services
+            adapter.discoverServices(this.device._handle, this.device._allowedServices, function(services) {
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothRemoteGATTService(serviceInfo);
@@ -308,8 +325,7 @@
                 resolve(filtered);
             }
             if (this._services) return complete.call(this);
-            adapter.discoverIncludedServices(this._handle, [], function(services) {
-                // filter services
+            adapter.discoverIncludedServices(this._handle, this.device._allowedServices, function(services) {
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothRemoteGATTService(serviceInfo);
