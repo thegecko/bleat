@@ -31,19 +31,19 @@
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
 		// Not supported by Cordova.
-		define(['bleat', 'bluetooth.helpers'], factory);
+		define(['bleat', 'bluetooth.helpers'], factory.bind(this, root));
 	} else if (typeof exports === 'object') {
 		// Node. Does not work with strict CommonJS
 		// Not supported by Cordova.
 		module.exports = function(bleat) {
-			return factory(bleat, require('./bluetooth.helpers'));
+			return factory(root, bleat, require('./bluetooth.helpers'));
 		};
 	} else {
 		// Browser globals with support for web workers (root is window)
 		// Used with Cordova.
-		factory(root.bleat, root.bleatHelpers);
+		factory(root, root.bleat, root.bleatHelpers);
 	}
-})(this, function(bleat, helpers) {
+})(this, function(root, bleat, helpers) {
 	"use strict";
 
 	// Object that holds Bleat adapter functions.
@@ -873,8 +873,8 @@
 
 	function getPlatform()
 	{
-		if (window.cordova) {
-			return window.cordova.platformId;
+		if (root.cordova) {
+			return root.cordova.platformId;
 		}
 		else {
 			return null;
