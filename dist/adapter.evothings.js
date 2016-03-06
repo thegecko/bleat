@@ -58,6 +58,11 @@
 	// Add adapter object to Bleat. Adapter functions are defined below.
 	bleat._addAdapter('evothings', adapter);
 
+	function init(readyFn) {
+		if (root.evothings && evothings.ble) readyFn();
+		else document.addEventListener("deviceready", readyFn);
+	}
+
 	// Begin scanning for devices
 	adapter.startScan = function(
 		serviceUUIDs,	// String[] serviceUUIDs		advertised service UUIDs to restrict results by
@@ -66,14 +71,16 @@
 		errorFn			// Function(String errorMsg)	function called if error occurs
 		)
 	{
-		evothings.ble.startScan(
-			function(deviceInfo) {
-				//if (!this.deviceHandles[deviceID]) this.deviceHandles[deviceID] = deviceInfo;
-				if (foundFn) { foundFn(createBleatDeviceObject(deviceInfo)); }
-			},
-			function(error) {
-				if (errorFn) { errorFn(error); }
-			});
+		init(function() {
+			evothings.ble.startScan(
+				function(deviceInfo) {
+					//if (!this.deviceHandles[deviceID]) this.deviceHandles[deviceID] = deviceInfo;
+					if (foundFn) { foundFn(createBleatDeviceObject(deviceInfo)); }
+				},
+				function(error) {
+					if (errorFn) { errorFn(error); }
+				});
+		});
 	};
 
 	// Stop scanning for devices
@@ -81,7 +88,9 @@
 		errorFn			// Function(String errorMsg)	function called if error occurs
 		)
 	{
-		evothings.ble.stopScan();
+		init(function() {
+			evothings.ble.stopScan();
+		});
 	};
 
 	// Connect to a device
