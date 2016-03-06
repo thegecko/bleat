@@ -83,7 +83,7 @@
 
             // NamePrefix
             if (filter.namePrefix) {
-                if (filter.namePrefix.length > deviceInfo.name) return;
+                if (filter.namePrefix.length > deviceInfo.name.length) return;
                 if (filter.namePrefix !== deviceInfo.name.substr(0, filter.namePrefix.length)) return;
             }
 
