@@ -73,14 +73,77 @@
         }
     }
 
+    function filterDevice(options, deviceInfo) {
+        var valid = false;
+        var validServices = [];
+
+        options.filters.forEach(function(filter) {
+            // Name
+            if (filter.name && filter.name !== deviceInfo.name) return;
+
+            // NamePrefix
+            if (filter.namePrefix) {
+                if (filter.namePrefix.length > deviceInfo.name) return;
+                if (filter.namePrefix !== deviceInfo.name.substr(0, filter.namePrefix.length)) return;
+            }
+
+            // Services
+            if (filter.services) {
+                var serviceUUIDs = filter.services.map(helpers.getServiceUUID);
+                var servicesValid = serviceUUIDs.every(function(serviceUUID) {
+                    return (deviceInfo.uuids.indexOf(serviceUUID) > -1);
+                });
+
+                if (!servicesValid) return;
+                validServices = validServices.concat(serviceUUIDs);
+            }
+
+            valid = true;
+        });
+
+        if (!valid) return false;
+
+        // Add additional services
+        if (options.optionalServices) {
+            validServices = validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
+        }
+
+        // Set unique list of allowed services
+        deviceInfo._allowedServices = validServices.filter(function(item, index, array) {
+            return array.indexOf(item) === index;
+        });
+
+        return deviceInfo;
+    }
+
     function scan(options, foundFn, completeFn, errorFn) {
+        // Must have a filter
+        if (!options.filters || options.filters.length === 0) {
+            return errorFn("no filters specified");
+        }
+
+        // Don't allow empty filters
+        var emptyFilter = options.filters.some(function(filter) {
+            return (Object.keys(filter).length === 0);
+        });
+        if (emptyFilter) {
+            return errorFn("empty filter specified");
+        }
+
+        // Don't allow empty namePrefix
+        var emptyPrefix = options.filters.some(function(filter) {
+            return (typeof filter.namePrefix !== "undefined" && filter.namePrefix === "");
+        });
+        if (emptyPrefix) {
+            return errorFn("empty namePrefix specified");
+        }
+
         var searchUUIDs = [];
         if (options.filters) {
             options.filters.forEach(function(filter) {
                 if (filter.services) searchUUIDs = searchUUIDs.concat(filter.services.map(helpers.getServiceUUID));
             });
         }
-
         // Unique-ify
         searchUUIDs = searchUUIDs.filter(function(item, index, array) {
             return array.indexOf(item) === index;
@@ -89,10 +152,8 @@
         var scanTime = options.scanTime || defaultScanTime;
         var scanTimeout;
         adapter.startScan(searchUUIDs, function(deviceInfo) {
-            // To do: filter devices and advertised services
-//                  var accessibleUUIDs = options.optionalServices ? options.filters.services.map(helpers.getServiceUUID) : [];
-//                  accessibleUUIDs = accessibleUUIDs.concat(searchUUIDs);
-            foundFn(deviceInfo, scanTimeout);
+            deviceInfo = filterDevice(options, deviceInfo);
+            if (deviceInfo) foundFn(deviceInfo, scanTimeout);
         }, function() {
             scanTimeout = setTimeout(function() {
                 adapter.stopScan();
@@ -131,6 +192,7 @@
     // BluetoothDevice Object
     var BluetoothDevice = function(properties) {
         this._handle = null;
+        this._allowedServices = [];
 
         this.id = "unknown"; 
         this.name = null;
@@ -204,8 +266,7 @@
                 resolve(filtered);
             }
             if (this._services) return complete.call(this);
-            adapter.discoverServices(this.device._handle, [], function(services) {
-                // filter services
+            adapter.discoverServices(this.device._handle, this.device._allowedServices, function(services) {
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothRemoteGATTService(serviceInfo);
@@ -285,8 +346,7 @@
                 resolve(filtered);
             }
             if (this._services) return complete.call(this);
-            adapter.discoverIncludedServices(this._handle, [], function(services) {
-                // filter services
+            adapter.discoverIncludedServices(this._handle, this.device._allowedServices, function(services) {
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothRemoteGATTService(serviceInfo);
