@@ -41,9 +41,9 @@
 	} else {
 		// Browser globals with support for web workers (root is window)
 		// Used with Cordova.
-		factory(root.bleat, root.bleatHelpers);
+		factory(root, root.bleat, root.bleatHelpers);
 	}
-})(this, function(bleat, helpers) {
+})(this, function(root, bleat, helpers) {
 	"use strict";
 
 	// Object that holds Bleat adapter functions.
@@ -873,8 +873,8 @@
 
 	function getPlatform()
 	{
-		if (window.cordova) {
-			return window.cordova.platformId;
+		if (root.cordova) {
+			return root.cordova.platformId;
 		}
 		else {
 			return null;
