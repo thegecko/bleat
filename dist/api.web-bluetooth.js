@@ -95,7 +95,7 @@
                 });
 
                 if (!servicesValid) return;
-                validServices.concat(serviceUUIDs);
+                validServices = validServices.concat(serviceUUIDs);
             }
 
             valid = true;
@@ -105,7 +105,7 @@
 
         // Add additional services
         if (options.optionalServices) {
-            validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
+            validServices = validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
         }
 
         // Set unique list of allowed services
@@ -132,7 +132,7 @@
 
         // Don't allow empty namePrefix
         var emptyPrefix = options.filters.some(function(filter) {
-            return (filter.namePrefix && filter.namePrefix === "");
+            return (typeof filter.namePrefix !== "undefined" && filter.namePrefix === "");
         });
         if (emptyPrefix) {
             return errorFn("empty namePrefix specified");
