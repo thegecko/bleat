@@ -117,6 +117,27 @@
     }
 
     function scan(options, foundFn, completeFn, errorFn) {
+        // Must have a filter
+        if (!options.filters || options.filters.length === 0) {
+            return errorFn("no filters specified");
+        }
+
+        // Don't allow empty filters
+        var emptyFilter = options.filters.some(function(filter) {
+            return (Object.keys(filter).length === 0);
+        });
+        if (emptyFilter) {
+            return errorFn("empty filter specified");
+        }
+
+        // Don't allow empty namePrefix
+        var emptyPrefix = options.filters.some(function(filter) {
+            return (filter.namePrefix && filter.namePrefix === "");
+        });
+        if (emptyPrefix) {
+            return errorFn("empty namePrefix specified");
+        }
+
         var searchUUIDs = [];
         if (options.filters) {
             options.filters.forEach(function(filter) {
