@@ -73,6 +73,31 @@
         }
     }
 
+    function filterDevice(options, deviceInfo) {
+        var valid = options.filters.some(function(filter) {
+            // Name
+            if (filter.name && filter.name !== deviceInfo.name) {
+                return false;
+            }
+            // NamePrefix
+            if (filter.namePrefix) {
+                if (filter.namePrefix.length > deviceInfo.name) {
+                    return false;
+                }
+                if (filter.namePrefix !== deviceInfo.name.substr(0, filter.namePrefix.length)) {
+                    return false;
+                }
+            }
+            // Services
+            if (!filter.services) return true;
+            return filter.services.map(helpers.getServiceUUID).every(function(serviceUUID) {
+                return (deviceInfo.uuids.indexOf(serviceUUID) > -1);
+            });
+        });
+
+        return valid ? deviceInfo : null;
+    }
+
     function scan(options, foundFn, completeFn, errorFn) {
         var searchUUIDs = [];
         if (options.filters) {
@@ -89,10 +114,8 @@
         var scanTime = options.scanTime || defaultScanTime;
         var scanTimeout;
         adapter.startScan(searchUUIDs, function(deviceInfo) {
-            // To do: filter devices and advertised services
-//                  var accessibleUUIDs = options.optionalServices ? options.filters.services.map(helpers.getServiceUUID) : [];
-//                  accessibleUUIDs = accessibleUUIDs.concat(searchUUIDs);
-            foundFn(deviceInfo, scanTimeout);
+            deviceInfo = filterDevice(options, deviceInfo);
+            if (deviceInfo) foundFn(deviceInfo, scanTimeout);
         }, function() {
             scanTimeout = setTimeout(function() {
                 adapter.stopScan();
