@@ -20,18 +20,8 @@ process.stdin.on('readable', () => {
     }
 });
 
-function selectDevice(index) {
-    var bluetoothDevice = bluetoothDevices[index];
-    var server = null;
-    console.log("connecting...");
-
-    bluetooth.cancelRequest()
-    .then(() => bluetoothDevice.gatt.connect())
-    .then(gattServer => {
-        console.log("connected to " + bluetoothDevice.name);
-        server = gattServer;
-        return server.getPrimaryServices();
-    })
+function enumerateGatt(server) {
+    return server.getPrimaryServices()
     .then(services => {
 
         return services.reduce((promise, service) => {
@@ -55,6 +45,20 @@ function selectDevice(index) {
             });
         }, Promise.resolve());
 
+    });
+}
+
+function selectDevice(index) {
+    var bluetoothDevice = bluetoothDevices[index];
+    var server = null;
+    console.log("connecting...");
+
+    bluetooth.cancelRequest()
+    .then(() => bluetoothDevice.gatt.connect())
+    .then(gattServer => {
+        console.log("connected to " + bluetoothDevice.name);
+        server = gattServer;
+        return enumerateGatt(server);
     })
     .then(() => server.disconnect())
     .then(() => {
