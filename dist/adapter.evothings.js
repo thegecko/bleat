@@ -703,7 +703,7 @@
 			if (deviceInfo.advertisementData.kCBAdvDataServiceData) {
 				for (var uuid in deviceInfo.advertisementData.kCBAdvDataServiceData) {
 					var data = deviceInfo.advertisementData.kCBAdvDataServiceData[uuid];
-					device.adData.serviceData[uuid] = bufferToDataView(base64DecToArr(data));
+					device.adData.serviceData[helpers.getCanonicalUUID(uuid)] = bufferToDataView(base64DecToArr(data));
 				}
 			}
 

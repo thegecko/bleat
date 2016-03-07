@@ -103,7 +103,7 @@
                         var serviceData = {};
                         if (deviceInfo.advertisement.serviceData) {
                             deviceInfo.advertisement.serviceData.forEach(function(serviceAdvert) {
-                                serviceData[serviceAdvert.uuid] = bufferToDataView(serviceAdvert.data);
+                                serviceData[helpers.getCanonicalUUID(serviceAdvert.uuid)] = bufferToDataView(serviceAdvert.data);
                             });
                         }
 
