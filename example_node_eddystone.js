@@ -1,41 +1,42 @@
 var bluetooth = require('./index').webbluetooth;
+var helpers = require('./index').helpers;
 var eddystoneUUID = 0xFEAA;
 
+var frameTypes = {
+    "UID": 0x00,
+    "URL": 0x10,
+    "TLM": 0x20
+}
+
+var schemes = {
+    0x00: "http://www.",
+    0x01: "https://www.",
+    0x02: "http://",
+    0x03: "https://"
+}
+
+var expansions = {
+    0x00: ".com/",
+    0x01: ".org/",
+    0x02: ".edu/",
+    0x03: ".net/",
+    0x04: ".info/",
+    0x05: ".biz/",
+    0x06: ".gov/",
+    0x07: ".com",
+    0x08: ".org",
+    0x09: ".edu",
+    0x0a: ".net",
+    0x0b: ".info",
+    0x0c: ".biz",
+    0x0d: ".gov"
+}
+
 function decodeEddystone(view) {
-    var frameTypes = {
-        0x00: "UID",
-        0x10: "URL",
-        0x20: "TLM"
-    }
+    var type = view.getUint8(0);
+    if (typeof type === "undefined") return null;
 
-    var schemes = {
-        0x00: "http://www.",
-        0x01: "https://www.",
-        0x02: "http://",
-        0x03: "https://"
-    }
-
-    var expansions = {
-        0x00: ".com/",
-        0x01: ".org/",
-        0x02: ".edu/",
-        0x03: ".net/",
-        0x04: ".info/",
-        0x05: ".biz/",
-        0x06: ".gov/",
-        0x07: ".com",
-        0x08: ".org",
-        0x09: ".edu",
-        0x0a: ".net",
-        0x0b: ".info",
-        0x0c: ".biz",
-        0x0d: ".gov"
-    }
-
-    var type = frameTypes[view.getUint8(0)];
-    if (!type) return null;
-
-    if (type === "UID") {
+    if (type === frameTypes.UID) {
         var uidArray = [];
         for (var i = 2; i < view.byteLength; i++) {
             var hex = view.getUint8(i).toString(16);
@@ -49,7 +50,7 @@ function decodeEddystone(view) {
         };
     }
 
-    if (type === "URL") {
+    if (type === frameTypes.URL) {
         var url = "";
         for (var i = 2; i < view.byteLength; i++) {
             if (i === 2) {
@@ -65,7 +66,7 @@ function decodeEddystone(view) {
         };
     }
 
-    if (type === "TLM") {
+    if (type === frameTypes.TLM) {
         return {
             type: type,
             version: view.getUint8(1),
@@ -78,26 +79,37 @@ function decodeEddystone(view) {
 }
 
 function handleDeviceFound(bluetoothDevice) {
-	var eddyData = bluetoothDevice.adData.serviceData.get(eddystoneUUID);
-	if (eddyData) {
-		var decoded = decodeEddystone(eddyData);
-		if (decoded && decoded.type === "URL") {
-			console.log(decoded.url);
-		}
-	}
+    var uuid = helpers.getServiceUUID(eddystoneUUID);
+    var eddyData = bluetoothDevice.adData.serviceData.get(uuid);
+    if (eddyData) {
+        var decoded = decodeEddystone(eddyData);
+        if (decoded) {
+            switch(decoded.type) {
+                case frameTypes.UID:
+                    console.log("txPower: " + decoded.txPower);
+                    break;
+                case frameTypes.URL:
+                    console.log("url: " + decoded.url);
+                    break;
+                case frameTypes.TLM:
+                    console.log("version: " + decoded.version);
+                    break;
+            }
+        }
+    }
 }
 
 // Recursively scan
 function scan() {
-	console.log("scanning...");
-	bluetooth.requestDevice({
-		filters:[{ services:[ eddystoneUUID ] }],
-		deviceFound: handleDeviceFound
-	})
-	.then(scan)
-	.catch(error => {
-		console.log(error);
-		process.exit();
-	});
+    console.log("scanning...");
+    bluetooth.requestDevice({
+        filters:[{ services:[ eddystoneUUID ] }],
+        deviceFound: handleDeviceFound
+    })
+    .then(scan)
+    .catch(error => {
+        console.log(error);
+        process.exit();
+    });
 }
 scan();
