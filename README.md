@@ -12,7 +12,7 @@ Bleat (Blutooth Low Energy Abstraction Tool) provides a simplified BLE layer whi
 Bleat has 2 APIs:
 
  * The [Classic API](api_classic.md), originally developed for this project
- * The [Web Bluetooth API](https://webbluetoothcg.github.io/web-bluetooth/) specification developed for use in browsers
+ * The [Extended Web Bluetooth API](api_web-bluetooth.md) specification developed for use in browsers
 
 ## Installation
 
