@@ -660,6 +660,9 @@
 		// Service data (set below).
 		device.adData.serviceData = {};
 
+		// Array that holds service UUIDs.
+		device.adData.serviceUUIDs = [];
+
 		// Manufacturer data (set below).
 		device.adData.manufacturerData = null;
 
