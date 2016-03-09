@@ -143,9 +143,7 @@
     var scanner = null;
     function requestDevice(options) {
         return new Promise(function(resolve, reject) {
-            if (scanner !== null) {
-                return reject("requestDevice error: request in progress");
-            }
+            if (scanner !== null) return reject("requestDevice error: request in progress");
 
             if (!options.deviceFound) {
                 // Must have a filter
@@ -259,6 +257,8 @@
     };
     BluetoothRemoteGATTServer.prototype.connect = function() {
         return new Promise(function(resolve, reject) {
+            if (this.connected) return reject("connect error: device already connected");
+
             adapter.connect(this.device._handle, function() {
                 this.connected = true;
                 resolve(this);
@@ -274,7 +274,9 @@
     };
     BluetoothRemoteGATTServer.prototype.getPrimaryService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.connected) return reject("getPrimaryService error: device not connected");
             if (!serviceUUID) return reject("getPrimaryService error: no service specified");
+
             this.getPrimaryServices(serviceUUID)
             .then(function(services) {
                 if (services.length !== 1) return reject("getPrimaryService error: service not found");
@@ -287,6 +289,8 @@
     };
     BluetoothRemoteGATTServer.prototype.getPrimaryServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.connected) return reject("getPrimaryServices error: device not connected");
+
             function complete() {
                 if (!serviceUUID) return resolve(this._services);
                 var filtered = this._services.filter(function(service) {
@@ -321,7 +325,9 @@
     };
     BluetoothRemoteGATTService.prototype.getCharacteristic = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.device.gatt.connected) return reject("getCharacteristic error: device not connected");
             if (!characteristicUUID) return reject("getCharacteristic error: no characteristic specified");
+
             this.getCharacteristics(characteristicUUID)
             .then(function(characteristics) {
                 if (characteristics.length !== 1) return reject("getCharacteristic error: characteristic not found");
@@ -334,6 +340,8 @@
     };
     BluetoothRemoteGATTService.prototype.getCharacteristics = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.device.gatt.connected) return reject("getCharacteristics error: device not connected");
+
             function complete() {
                 if (!characteristicUUID) return resolve(this._characteristics);
                 var filtered = this._characteristics.filter(function(characteristic) {
@@ -354,7 +362,9 @@
     };
     BluetoothRemoteGATTService.prototype.getIncludedService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.device.gatt.connected) return reject("getIncludedService error: device not connected");
             if (!serviceUUID) return reject("getIncludedService error: no service specified");
+
             this.getIncludedServices(serviceUUID)
             .then(function(services) {
                 if (services.length !== 1) return reject("getIncludedService error: service not found");
@@ -367,6 +377,8 @@
     };
     BluetoothRemoteGATTService.prototype.getIncludedServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.device.gatt.connected) return reject("getIncludedServices error: device not connected");
+
             function complete() {
                 if (!serviceUUID) return resolve(this._services);
                 var filtered = this._services.filter(function(service) {
@@ -417,7 +429,9 @@
     };
     BluetoothRemoteGATTCharacteristic.prototype.getDescriptor = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("getDescriptor error: device not connected");
             if (!descriptorUUID) return reject("getDescriptor error: no descriptor specified");
+
             this.getDescriptors(descriptorUUID)
             .then(function(descriptors) {
                 if (descriptors.length !== 1) return reject("getDescriptor error: descriptor not found");
@@ -430,6 +444,8 @@
     };
     BluetoothRemoteGATTCharacteristic.prototype.getDescriptors = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("getDescriptors error: device not connected");
+
             function complete() {
                 if (!descriptorUUID) return resolve(this._descriptors);
                 var filtered = this._descriptors.filter(function(descriptor) {
@@ -450,6 +466,8 @@
     };
     BluetoothRemoteGATTCharacteristic.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("readValue error: device not connected");
+
             adapter.readCharacteristic(this._handle, function(dataView) {
                 this.value = dataView;
                 resolve(dataView);
@@ -458,9 +476,11 @@
         }.bind(this));
     };
     BluetoothRemoteGATTCharacteristic.prototype.writeValue = function(bufferSource) {
-        var arrayBuffer = bufferSource.buffer || bufferSource;
-        var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("writeValue error: device not connected");
+
+            var arrayBuffer = bufferSource.buffer || bufferSource;
+            var dataView = new DataView(arrayBuffer);
             adapter.writeCharacteristic(this._handle, dataView, function() {
                 this.value = dataView;
                 resolve();
@@ -469,6 +489,8 @@
     };
     BluetoothRemoteGATTCharacteristic.prototype.startNotifications = function() {
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("startNotifications error: device not connected");
+
             adapter.enableNotify(this._handle, function(dataView) {
                 this.value = dataView;
                 this.dispatchEvent({ type: "characteristicvaluechanged", bubbles: true });
@@ -477,6 +499,8 @@
     };
     BluetoothRemoteGATTCharacteristic.prototype.stopNotifications = function() {
         return new Promise(function(resolve, reject) {
+            if (!this.service.device.gatt.connected) return reject("stopNotifications error: device not connected");
+
             adapter.disableNotify(this._handle, resolve, wrapReject(reject, "stopNotifications error"));
         }.bind(this));
     };
@@ -498,6 +522,8 @@
     };
     BluetoothRemoteGATTDescriptor.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
+            if (!this.characteristic.service.device.gatt.connected) return reject("readValue error: device not connected");
+
             adapter.readDescriptor(this._handle, function(dataView) {
                 this.value = dataView;
                 resolve(dataView);
@@ -505,9 +531,11 @@
         }.bind(this));
     };
     BluetoothRemoteGATTDescriptor.prototype.writeValue = function(bufferSource) {
-        var arrayBuffer = bufferSource.buffer || bufferSource;
-        var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
+            if (!this.characteristic.service.device.gatt.connected) return reject("writeValue error: device not connected");
+
+            var arrayBuffer = bufferSource.buffer || bufferSource;
+            var dataView = new DataView(arrayBuffer);
             adapter.writeDescriptor(this._handle, dataView, function() {
                 this.value = dataView;
                 resolve();
