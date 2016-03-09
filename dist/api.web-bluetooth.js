@@ -119,6 +119,9 @@
     var scanner = null;
     function requestDevice(options) {
         return new Promise(function(resolve, reject) {
+            if (scanner !== null) {
+                return reject("requestDevice error: request in progress");
+            }
 
             if (!options.deviceFound) {
                 // Must have a filter
