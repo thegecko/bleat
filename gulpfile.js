@@ -3,7 +3,7 @@ var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglifyjs');
 
 var apis = ['classic', 'web-bluetooth'];
-var adapters = ['chromeos', 'evothings', 'noble'];
+var adapters = ['noble', 'evothings'];
 
 gulp.task('lint', function() {
     return gulp.src(['dist/*.js', '!dist/*.min.js'])
