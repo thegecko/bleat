@@ -1,5 +1,5 @@
 requirejs.config({
-	baseUrl: 'dist',
+	baseUrl: '../dist',
 	paths: {
 		bleat: 'api.classic',
 		adapter: 'adapter.evothings'

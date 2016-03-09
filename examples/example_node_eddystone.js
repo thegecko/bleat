@@ -1,5 +1,5 @@
-var bluetooth = require('./index').webbluetooth;
-var helpers = require('./index').helpers;
+var bluetooth = require('../index').webbluetooth;
+var helpers = require('../index').helpers;
 var eddystoneUUID = 0xFEAA;
 
 var frameTypes = {

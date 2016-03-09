@@ -37,7 +37,7 @@ Returning true from the ```deviceFound()``` function selects the current Bluetoo
 
 #### Continuous scanning
 
-See [example_node_eddystone.js](example_node_eddystone.js) for a full example.
+See [example_node_eddystone.js](examples/example_node_eddystone.js) for a full example.
 
 ```js
 var eddystoneUUID = 0xFEAA;
@@ -57,7 +57,7 @@ scan();
 
 #### Asynchronous device selection with UI
 
-See [example_node_selector.js](example_node_selector.js) for a full node command-line example.
+See [example_node_selector.js](examples/example_node_selector.js) for a full node command-line example.
 
 ```js
 var devices = [];

@@ -1,4 +1,4 @@
-var bleat = require('./index').classic;
+var bleat = require('../index').classic;
 
 function logStatus(message) {
 	console.log(message);
