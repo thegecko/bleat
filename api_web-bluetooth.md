@@ -57,7 +57,7 @@ scan();
 
 #### Asynchronous device selection with UI
 
-See [example_node_selector.js](example_node_selector.js) for a full example.
+See [example_node_selector.js](example_node_selector.js) for a full node command-line example.
 
 ```js
 var devices = [];
@@ -74,6 +74,43 @@ var device = devices[0];
 bluetooth.cancelRequest()
 .then(() => device.gatt.connect())
 .then(gattServer => ...
+```
+
+This could be wrapped into an implementation-specific UI function:
+
+```js
+function requestDeviceUI(filters) {
+    return new Promise(function(resolve, reject) {
+        var devices = [];
+
+        bluetooth.requestDevice({
+            filters: filters,
+            deviceFound: deviceFoundFn
+        })
+        .catch(reject);
+
+        function deviceFoundFn(device) {
+            devices.push(device);
+            // Update UI
+        }
+
+        // When user selects a device
+        function chooseDevice(index) {
+            var device = devices[index];
+
+            bluetooth.cancelRequest()
+            .then(() => resolve(device))
+            .catch(reject);
+        }
+    });
+}
+```
+
+Which could be called like this:
+
+```js
+requestDeviceUI([{ services:[ "heart_rate" ] }])
+.then(device => ...
 ```
 
 #### Synchronous device selection
