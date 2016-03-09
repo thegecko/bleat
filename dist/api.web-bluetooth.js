@@ -116,54 +116,83 @@
         return deviceInfo;
     }
 
-    function scan(options, foundFn, completeFn, errorFn) {
-        // Must have a filter
-        if (!options.filters || options.filters.length === 0) {
-            return errorFn("no filters specified");
-        }
+    var scanner = null;
+    function requestDevice(options) {
+        return new Promise(function(resolve, reject) {
 
-        // Don't allow empty filters
-        var emptyFilter = options.filters.some(function(filter) {
-            return (Object.keys(filter).length === 0);
-        });
-        if (emptyFilter) {
-            return errorFn("empty filter specified");
-        }
+            if (!options.deviceFound) {
+                // Must have a filter
+                if (!options.filters || options.filters.length === 0) {
+                    return reject(new TypeError("requestDevice error: no filters specified"));
+                }
 
-        // Don't allow empty namePrefix
-        var emptyPrefix = options.filters.some(function(filter) {
-            return (typeof filter.namePrefix !== "undefined" && filter.namePrefix === "");
-        });
-        if (emptyPrefix) {
-            return errorFn("empty namePrefix specified");
-        }
+                // Don't allow empty filters
+                var emptyFilter = options.filters.some(function(filter) {
+                    return (Object.keys(filter).length === 0);
+                });
+                if (emptyFilter) {
+                    return reject(new TypeError("requestDevice error: empty filter specified"));
+                }
 
-        var searchUUIDs = [];
-        if (options.filters) {
-            options.filters.forEach(function(filter) {
-                if (filter.services) searchUUIDs = searchUUIDs.concat(filter.services.map(helpers.getServiceUUID));
+                // Don't allow empty namePrefix
+                var emptyPrefix = options.filters.some(function(filter) {
+                    return (typeof filter.namePrefix !== "undefined" && filter.namePrefix === "");
+                });
+                if (emptyPrefix) {
+                    return reject(new TypeError("requestDevice error: empty namePrefix specified"));
+                }
+            }
+
+            var searchUUIDs = [];
+            if (options.filters) {
+                options.filters.forEach(function(filter) {
+                    if (filter.services) searchUUIDs = searchUUIDs.concat(filter.services.map(helpers.getServiceUUID));
+                });
+            }
+            // Unique-ify
+            searchUUIDs = searchUUIDs.filter(function(item, index, array) {
+                return array.indexOf(item) === index;
             });
-        }
-        // Unique-ify
-        searchUUIDs = searchUUIDs.filter(function(item, index, array) {
-            return array.indexOf(item) === index;
-        });
 
-        var scanTime = options.scanTime || defaultScanTime;
-        var scanTimeout;
-        adapter.startScan(searchUUIDs, function(deviceInfo) {
-            deviceInfo = filterDevice(options, deviceInfo);
-            if (deviceInfo) foundFn(deviceInfo, scanTimeout);
-        }, function() {
-            scanTimeout = setTimeout(function() {
+            var scanTime = options.scanTime || defaultScanTime;
+            var completeFn = options.deviceFound ? resolve : function() {
+                reject("requestDevice error: no devices found");
+            };
+
+            adapter.startScan(searchUUIDs, function(deviceInfo) {
+                if (!options.deviceFound) {
+                    deviceInfo = filterDevice(options, deviceInfo);
+                }
+
+                if (deviceInfo) {
+                    var bluetoothDevice = new BluetoothDevice(deviceInfo);
+                    if (!options.deviceFound || options.deviceFound(bluetoothDevice)) {
+                        cancelRequest()
+                        .then(function() {
+                            resolve(bluetoothDevice);
+                        });
+                    }
+                }
+            }, function() {
+                scanner = setTimeout(function() {
+                    cancelRequest()
+                    .then(completeFn);
+                }, scanTime);
+            }, wrapReject(reject, "requestDevice error"));
+        });
+    }
+    function cancelRequest() {
+        return new Promise(function(resolve, reject) {
+            if (scanner) {
+                clearTimeout(scanner);
+                scanner = null;
                 adapter.stopScan();
-                completeFn();
-            }, scanTime);
-        }, errorFn);
+            }
+            resolve();
+        });
     }
 
     var events = {};
-
     function createListenerFn(eventTypes) {
         return function(type, callback, capture) {
             if (eventTypes.indexOf(type) < 0) return; //error
@@ -172,7 +201,6 @@
             events[this][type].push(callback);
         };
     }
-
     function removeEventListener(type, callback, capture) {
         if (!events[this] || !events[this][type]) return; //error
         var i = events[this][type].indexOf(callback);
@@ -180,7 +208,6 @@
         if (events[this][type].length === 0) delete events[this][type];
         if (Object.keys(events[this]).length === 0) delete events[this];
     }
-
     function dispatchEvent(event) {
         if (!events[this] || !events[this][event.type]) return; //error
         event.target = this;
@@ -491,29 +518,7 @@
             adapters[adapterName] = definition;
             adapter = definition;
         },
-        requestDevice: function(options) {
-            return new Promise(function(resolve, reject) {
-                scan(options, function(deviceInfo, scanTimeout) {
-                    if (scanTimeout) clearTimeout(scanTimeout);
-                    adapter.stopScan();
-                    resolve(new BluetoothDevice(deviceInfo));
-                }, function() {
-                    reject("requestDevice error: no devices found");
-                }, wrapReject(reject, "requestDevice error"));
-            });
-        },
-        requestDevices: function(options) {
-            return new Promise(function(resolve, reject) {
-                var devices = [];
-                scan(options, function(deviceInfo) {
-                    devices.push(deviceInfo);
-                }, function() {
-                    if (devices.length === 0) reject("requestDevices error: no devices found");
-                    else resolve(devices.map(function(deviceInfo) {
-                        return new BluetoothDevice(deviceInfo);
-                    }));
-                }, wrapReject(reject, "requestDevices error"));
-            });
-        }
+        requestDevice: requestDevice,
+        cancelRequest: cancelRequest
     };
 }));
