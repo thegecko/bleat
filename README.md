@@ -92,7 +92,7 @@ Include the ```bluetooth.helpers.js``` file, then the bleat api file you wish to
 Alternatively, you can just include the minified file which contains the API and adapter you wish to use:
 
 ```html
-<script src="path/to/web-bluetooth.chromeos.min.js"></script>
+<script src="path/to/web-bluetooth.evothings.min.js"></script>
 ```
 
 A global object ```root.bleat``` will then be available to use.
