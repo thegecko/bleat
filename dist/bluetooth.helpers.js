@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: bluetooth helpers
- * Version: 0.0.1
+ * Version: 0.1.0
  *
  * The MIT License (MIT)
  *

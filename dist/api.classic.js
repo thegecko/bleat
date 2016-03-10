@@ -1,11 +1,11 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality - classic specification
- * Version: 0.0.15
+ * Version: 0.1.0
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Rob Moran
+ * Copyright (c) 2016 Rob Moran
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
