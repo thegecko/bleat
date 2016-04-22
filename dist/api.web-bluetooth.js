@@ -231,11 +231,6 @@
             manufacturerData: new Map(),
             serviceData: new Map()
         };
-        this.deviceClass = null;
-        this.vendorIDSource = "bluetooth";
-        this.vendorID = null;
-        this.productID = null;
-        this.productVersion = null;
         this.gatt = new BluetoothRemoteGATTServer();
         this.gatt.device = this;
         this.uuids = [];
