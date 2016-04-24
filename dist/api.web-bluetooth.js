@@ -185,7 +185,9 @@
             };
 
             adapter.startScan(searchUUIDs, function(deviceInfo) {
-                if (!options.deviceFound) {
+
+                // filter devices if filters specified
+                if (options.filters) {
                     deviceInfo = filterDevice(options, deviceInfo);
                 }
 
