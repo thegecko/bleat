@@ -661,9 +661,6 @@
 		// Service data (set below).
 		device.adData.serviceData = {};
 
-		// Array that holds service UUIDs.
-		device.adData.serviceUUIDs = [];
-
 		// Manufacturer data (set below).
 		device.adData.manufacturerData = null;
 
@@ -750,7 +747,7 @@
 			// 16-bit Service Class UUID.
 			else if (type === 0x02 || type === 0x03) {
 				for (i = 0; i < length; i += 2) {
-					device.adData.serviceUUIDs.push(
+					device.uuids.push(
 						helpers.getCanonicalUUID(
 							littleEndianToUint16(byteArray, pos + i).toString(16)));
 				}
@@ -758,7 +755,7 @@
 			// 32-bit Service Class UUID.
 			else if (type === 0x04 || type === 0x05) {
 				for (i = 0; i < length; i += 4) {
-					device.adData.serviceUUIDs.push(
+					device.uuids.push(
 						helpers.getCanonicalUUID(
 							littleEndianToUint32(byteArray, pos + i).toString(16)));
 				}
@@ -766,7 +763,7 @@
 			// 128-bit Service Class UUID.
 			else if (type === 0x06 || type === 0x07) {
 				for (i = 0; i < length; i += 16) {
-					device.adData.serviceUUIDs.push(
+					device.uuids.push(
 						helpers.getCanonicalUUID(arrayToUUID(byteArray, pos + i)));
 				}
 			}
