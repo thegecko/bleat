@@ -1,7 +1,6 @@
 /* @license
  *
  * BLE Abstraction Tool: Evothings BLE plugin adapter
- * Version: 0.1.0
  *
  * The MIT License (MIT)
  *

@@ -1,7 +1,6 @@
 /* @license
  *
  * BLE Abstraction Tool: noble adapter
- * Version: 0.1.0
  *
  * The MIT License (MIT)
  *

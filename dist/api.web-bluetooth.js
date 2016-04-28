@@ -1,7 +1,6 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality - web bluetooth specification
- * Version: 0.1.0
  *
  * The MIT License (MIT)
  *
