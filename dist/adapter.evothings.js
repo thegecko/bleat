@@ -73,6 +73,7 @@
 		init(function() {
 			evothings.ble.stopScan();
 			evothings.ble.startScan(
+			    serviceUUIDs,
 				function(deviceInfo) {
 					if (foundFn) { foundFn(createBleatDeviceObject(deviceInfo)); }
 				},
