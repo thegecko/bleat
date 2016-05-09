@@ -48,7 +48,7 @@
 		startScan: function(
 			serviceUUIDs,	// String[] serviceUUIDs		advertised service UUIDs to restrict results by
 			foundFn,		// Function(Object deviceInfo)	function called with each discovered deviceInfo
-			completeFn,		// Function()					function called when scanning completed
+			completeFn,		// Function()					function called when scanning successfully started
 			errorFn			// Function(String errorMsg)	function called if error occurs
 		) {},
 

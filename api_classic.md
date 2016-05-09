@@ -7,14 +7,16 @@
 Start scanning for devices.
 
 ```
-void bleat.startScan(foundFn, [completeFn], [errorFn]);
+void bleat.startScan([serviceUUIDs], foundFn, [completeFn], [errorFn]);
 ```
 
-function foundFn(device): callback function for each device discovered.
+string array serviceUUIDs: array or service UUIDs to scan for
 
-function completeFn(): callback if/when scanning stops
+function foundFn(device): called for each device discovered
 
-function errorFn(errorMsg): callback containing error if one occurs
+function completeFn(): called when scanning successfully started
+
+function errorFn(errorMsg): called if error occurs
 
 #### bleat.stopScan
 
