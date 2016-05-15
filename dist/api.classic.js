@@ -250,10 +250,10 @@
             adapters[adapterName] = definition;
             adapter = definition;
         },
-        startScan: function(serviceUUIDs, foundFn, completeFn, errorFn, options) {
+        startScan: function(serviceUUIDs, foundFn, completeFn, errorFn, allowDuplicates) {
             if (typeof serviceUUIDs === "function") {
                 // Service UUIDs not present, shift args.
-                options = errorFn;
+                allowDuplicates = errorFn;
                 errorFn = completeFn;
                 completeFn = foundFn;
                 foundFn = serviceUUIDs;
@@ -265,7 +265,6 @@
             var devices = {};
             adapter.startScan(serviceUUIDs, function(deviceInfo) {
                 var device = new Device(deviceInfo);
-                var allowDuplicates = options && options.allowDuplicates;
                 if (devices[device.address] && !allowDuplicates) return;
                 devices[device.address] = device;
                 if (foundFn) foundFn(device);
