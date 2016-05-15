@@ -7,7 +7,7 @@
 Start scanning for devices.
 
 ```
-void bleat.startScan([serviceUUIDs], foundFn, [completeFn], [errorFn]);
+void bleat.startScan([serviceUUIDs], foundFn, [completeFn], [errorFn], [allowDuplicates]);
 ```
 
 string array serviceUUIDs: array or service UUIDs to scan for
@@ -17,6 +17,8 @@ function foundFn(device): called for each device discovered
 function completeFn(): called when scanning successfully started
 
 function errorFn(errorMsg): called if error occurs
+
+bool allowDuplicates: will report the same device multiple times if set to true, will report once if set to false or omitted (false is the default)
 
 #### bleat.stopScan
 
