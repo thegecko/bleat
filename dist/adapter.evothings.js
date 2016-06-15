@@ -102,8 +102,16 @@
 		errorFn			// Function(String errorMsg)	function called if error occurs
 		)
 	{
+		// Check that device is not already connected.
+		var deviceHandle = mDeviceIdToDeviceHandle[handle];
+		if (deviceHandle) {
+			if (errorFn) { errorFn('device already connected'); }
+			return;
+		}
+		// Connect to the device.
 		evothings.ble.connect(
 			handle,
+			// Connect success.
 			function(connectInfo) {
 				// Connected.
 				if (2 === connectInfo.state && connectFn) {
@@ -111,11 +119,12 @@
 					connectFn();
 				}
 				// Disconnected.
-				else if (0 === connectInfo.state && connectFn) {
+				else if (0 === connectInfo.state && disconnectFn) {
 					disconnectDevice(handle);
 					disconnectFn();
 				}
 			},
+			// Connect error.
 			function(error) {
 				if (errorFn) { errorFn(error); }
 			});
