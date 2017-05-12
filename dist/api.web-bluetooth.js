@@ -178,32 +178,39 @@
                 return array.indexOf(item) === index;
             });
 
-            var scanTime = options.scanTime || defaultScanTime;
-            var completeFn = options.deviceFound ? resolve : function() {
-                reject("requestDevice error: no devices found");
-            };
-
+            var found = false;
             adapter.startScan(searchUUIDs, function(deviceInfo) {
-
                 // filter devices if filters specified
                 if (options.filters) {
                     deviceInfo = filterDevice(options, deviceInfo);
                 }
 
                 if (deviceInfo) {
-                    var bluetoothDevice = new BluetoothDevice(deviceInfo);
-                    if (!options.deviceFound || options.deviceFound(bluetoothDevice)) {
+                    found = true;
+                    function complete(bluetoothDevice) {
                         cancelRequest()
                         .then(function() {
                             resolve(bluetoothDevice);
                         });
                     }
+
+                    function selectFn() {
+                        complete(bluetoothDevice);
+                    }
+
+                    var bluetoothDevice = new BluetoothDevice(deviceInfo);
+                    if (!options.deviceFound || options.deviceFound(bluetoothDevice, selectFn)) {
+                        // If no deviceFound function, or deviceFound returns true, resolve with this device immediately
+                        complete(bluetoothDevice);
+                    }
                 }
             }, function() {
                 scanner = setTimeout(function() {
                     cancelRequest()
-                    .then(completeFn);
-                }, scanTime);
+                    .then(function() {
+                        if (!found) reject("requestDevice error: no devices found");
+                    });
+                }, options.scanTime || defaultScanTime);
             }, wrapReject(reject, "requestDevice error"));
         });
     }

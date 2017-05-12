@@ -48,27 +48,7 @@ function enumerateGatt(server) {
     });
 }
 
-function selectDevice(index) {
-    var bluetoothDevice = bluetoothDevices[index];
-    var server = null;
-    console.log("connecting...");
-
-    bluetooth.cancelRequest()
-    .then(() => bluetoothDevice.gatt.connect())
-    .then(gattServer => {
-        console.log("connected to " + bluetoothDevice.name);
-        server = gattServer;
-        return enumerateGatt(server);
-    })
-    .then(() => server.disconnect())
-    .then(() => {
-        console.log("\ndisconnected from " + bluetoothDevice.name);
-        process.exit();
-    })
-    .catch(logError);
-}
-
-function handleDeviceFound(bluetoothDevice) {
+function handleDeviceFound(bluetoothDevice, selectFn) {
     var discovered = bluetoothDevices.some(device => {
         return (device.id === bluetoothDevice.id);
     });
@@ -79,18 +59,33 @@ function handleDeviceFound(bluetoothDevice) {
         console.log("select a device:");
     }
 
-    bluetoothDevices.push(bluetoothDevice);
+    bluetoothDevices.push({ id: bluetoothDevice.id, select: selectFn });
     console.log(bluetoothDevices.length + ": " + bluetoothDevice.name);
 }
 
+function selectDevice(index) {
+    var device = bluetoothDevices[index];
+    device.select();
+}
+
+var server = null;
 console.log("scanning...");
+
 bluetooth.requestDevice({
 	deviceFound: handleDeviceFound
 })
+.then(device => {
+    console.log("connecting...");
+    return device.gatt.connect();
+})
+.then(gattServer => {
+    console.log("connected");
+    server = gattServer;
+    return enumerateGatt(server);
+})
+.then(() => server.disconnect())
 .then(() => {
-    if (bluetoothDevices.length === 0) {
-        console.log("no devices found");
-        process.exit();
-    }
+    console.log("\ndisconnected");
+    process.exit();
 })
 .catch(logError);
