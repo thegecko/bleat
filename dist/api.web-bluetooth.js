@@ -4,7 +4,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Rob Moran
+ * Copyright (c) 2017 Rob Moran
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -96,9 +96,8 @@
         });
     }
 
-    function filterDevice(options, deviceInfo) {
+    function filterDevice(options, deviceInfo, validServices) {
         var valid = false;
-        var validServices = [];
 
         options.filters.forEach(function(filter) {
             // Name
@@ -125,17 +124,6 @@
         });
 
         if (!valid) return false;
-
-        // Add additional services
-        if (options.optionalServices) {
-            validServices = validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
-        }
-
-        // Set unique list of allowed services
-        deviceInfo._allowedServices = validServices.filter(function(item, index, array) {
-            return array.indexOf(item) === index;
-        });
-
         return deviceInfo;
     }
 
@@ -144,7 +132,7 @@
         return new Promise(function(resolve, reject) {
             if (scanner !== null) return reject("requestDevice error: request in progress");
 
-            if (!options.deviceFound) {
+            if (!options.acceptAllDevices && !options.deviceFound) {
                 // Must have a filter
                 if (!options.filters || options.filters.length === 0) {
                     return reject(new TypeError("requestDevice error: no filters specified"));
@@ -180,23 +168,36 @@
 
             var found = false;
             adapter.startScan(searchUUIDs, function(deviceInfo) {
+                var validServices = [];
+
+                function complete(bluetoothDevice) {
+                    cancelRequest()
+                    .then(function() {
+                        resolve(bluetoothDevice);
+                    });
+                }
+
+                function selectFn() {
+                    complete(bluetoothDevice);
+                }
+
                 // filter devices if filters specified
                 if (options.filters) {
-                    deviceInfo = filterDevice(options, deviceInfo);
+                    deviceInfo = filterDevice(options, deviceInfo, validServices);
                 }
 
                 if (deviceInfo) {
                     found = true;
-                    function complete(bluetoothDevice) {
-                        cancelRequest()
-                        .then(function() {
-                            resolve(bluetoothDevice);
-                        });
+
+                    // Add additional services
+                    if (options.optionalServices) {
+                        validServices = validServices.concat(options.optionalServices.map(helpers.getServiceUUID));
                     }
 
-                    function selectFn() {
-                        complete(bluetoothDevice);
-                    }
+                    // Set unique list of allowed services
+                    deviceInfo._allowedServices = validServices.filter(function(item, index, array) {
+                        return array.indexOf(item) === index;
+                    });
 
                     var bluetoothDevice = new BluetoothDevice(deviceInfo);
                     if (!options.deviceFound || options.deviceFound(bluetoothDevice, selectFn)) {
@@ -266,6 +267,7 @@
                 this.connected = true;
                 resolve(this);
             }.bind(this), function() {
+                this._services = null;
                 this.connected = false;
                 this.device.dispatchEvent({ type: "gattserverdisconnected", bubbles: true });
             }.bind(this), wrapReject(reject, "connect error"));
