@@ -23,28 +23,30 @@ process.stdin.on('readable', () => {
 function enumerateGatt(server) {
     return server.getPrimaryServices()
     .then(services => {
-
-        return services.reduce((promise, service) => {
-            return promise
-            .then(() => service.getCharacteristics())
+        var sPromises = services.map(service => {
+            return service.getCharacteristics()
             .then(characteristics => {
-                console.log("\nservice: " + service.uuid);
-
-                return characteristics.reduce((promise, characteristic) => {
-                    return promise
-                    .then(() => characteristic.getDescriptors())
+                var cPromises = characteristics.map(characteristic => {
+                    return characteristic.getDescriptors()
                     .then(descriptors => {
-                        console.log("\t└characteristic: " + characteristic.uuid);
-
-                        descriptors.forEach(descriptor => {
-                            console.log("\t\t└descriptor: " + descriptor.uuid);
-                        });
+                        descriptors = descriptors.map(descriptor => `\t\t└descriptor: ${descriptor.uuid}`);
+                        descriptors.unshift(`\t└characteristic: ${characteristic.uuid}`);
+                        return descriptors.join("\n");
                     });
-                }, Promise.resolve());
+                });
 
+                return Promise.all(cPromises)
+                .then(descriptors => {
+                    descriptors.unshift(`service: ${service.uuid}`);
+                    return descriptors.join("\n");
+                });
             });
-        }, Promise.resolve());
+        });
 
+        return Promise.all(sPromises)
+        .then(services => {
+            console.log(services.join("\n"));
+        });
     });
 }
 
