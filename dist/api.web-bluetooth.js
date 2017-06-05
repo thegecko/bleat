@@ -499,14 +499,18 @@
             adapter.enableNotify(this._handle, function(dataView) {
                 this.value = dataView;
                 this.dispatchEvent({ type: "characteristicvaluechanged", bubbles: true });
-            }.bind(this), resolve, wrapReject(reject, "startNotifications error"));
+            }.bind(this), function() {
+                resolve(this);
+            }.bind(this), wrapReject(reject, "startNotifications error"));
         }.bind(this));
     };
     BluetoothRemoteGATTCharacteristic.prototype.stopNotifications = function() {
         return new Promise(function(resolve, reject) {
             if (!this.service.device.gatt.connected) return reject("stopNotifications error: device not connected");
 
-            adapter.disableNotify(this._handle, resolve, wrapReject(reject, "stopNotifications error"));
+            adapter.disableNotify(this._handle, function() {
+                resolve(this);
+            }.bind(this), wrapReject(reject, "stopNotifications error"));
         }.bind(this));
     };
     BluetoothRemoteGATTCharacteristic.prototype.addEventListener = createListenerFn([
