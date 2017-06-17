@@ -72,26 +72,25 @@
         }
     }
 
-    var events = {};
     function createListenerFn(eventTypes) {
         return function(type, callback, capture) {
             if (eventTypes.indexOf(type) < 0) return; //error
-            if (!events[this]) events[this] = {};
-            if (!events[this][type]) events[this][type] = [];
-            events[this][type].push(callback);
+            if (!this.__events) this.__events = {};
+            if (!this.__events[type]) this.__events[type] = [];
+            this.__events[type].push(callback);
         };
     }
     function removeEventListener(type, callback, capture) {
-        if (!events[this] || !events[this][type]) return; //error
-        var i = events[this][type].indexOf(callback);
-        if (i >= 0) events[this][type].splice(i, 1);
-        if (events[this][type].length === 0) delete events[this][type];
-        if (Object.keys(events[this]).length === 0) delete events[this];
+        if (!this.__events || !this.__events[type]) return; //error
+        var i = this.__events[type].indexOf(callback);
+        if (i >= 0) this.__events[type].splice(i, 1);
+        if (this.__events[type].length === 0) delete this.__events[type];
+        if (Object.keys(this.__events).length === 0) delete this.__events;
     }
     function dispatchEvent(event) {
-        if (!events[this] || !events[this][event.type]) return; //error
+        if (!this.__events || !this.__events[event.type]) return; //error
         event.target = this;
-        events[this][event.type].forEach(function(callback) {
+        this.__events[event.type].forEach(function(callback) {
             if (typeof callback === "function") callback(event);
         });
     }
