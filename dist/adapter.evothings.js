@@ -45,6 +45,9 @@
 })(this, function(root, bleat, helpers) {
 	"use strict";
 
+	// Guard against bleat being navigator.bluetooth
+	if (!bleat._addAdapter) return;
+
 	// Object that holds Bleat adapter functions.
 	var adapter = {};
 

@@ -42,6 +42,9 @@
 }(this, function(noble, bleat, helpers) {
     "use strict";
 
+    // Guard against bleat being navigator.bluetooth
+    if (!bleat._addAdapter) return;
+
     function checkForError(errorFn, continueFn) {
         return function(error) {
             if (error) errorFn(error);

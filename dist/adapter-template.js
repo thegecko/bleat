@@ -42,6 +42,9 @@
 }(this, function(bleat, helpers) {
 	"use strict";
 
+	// Guard against bleat being navigator.bluetooth
+	if (!bleat._addAdapter) return;
+
 	bleat._addAdapter("<template-name>", {
 
 		// Begin scanning for devices
@@ -147,6 +150,5 @@
 			completeFn,		// Function()					function called when write completes
 			errorFn			// Function(String errorMsg)	function called if error occurs
 		) {}
-
 	});
 }));
