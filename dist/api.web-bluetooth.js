@@ -29,19 +29,14 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        if (root.navigator.bluetooth) {
-            // Return existing web-bluetooth
-            define(root.navigator.bluetooth);
-        } else {
-            define(['es6-promise', 'es6-map', 'bluetooth.helpers'], factory);
-        }
+        define(['es6-promise', 'es6-map', 'bluetooth.helpers'], factory);
     } else if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS
         module.exports = factory(Promise, Map, require('./bluetooth.helpers'));
     } else {
         // Browser globals with support for web workers (root is window)
         // Assume Promise exists or has been poly-filled
-        root.bleat = root.navigator.bluetooth || factory(root.Promise, root.Map, root.bleatHelpers);
+        root.bleat = factory(root.Promise, root.Map, root.bleatHelpers);
     }
 }(this, function(Promise, Map, helpers) {
     "use strict";
