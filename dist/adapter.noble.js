@@ -295,7 +295,7 @@
                 this.characteristicHandles[handle].notify(true, checkForError(errorFn));
             },
             disableNotify: function(handle, completeFn, errorFn) {
-                if (!this.charNotifies[characteristic.uuid]) {
+                if (!this.charNotifies[handle]) {
                     return completeFn();
                 }
                 this.characteristicHandles[handle].once("notify", function(state) {
