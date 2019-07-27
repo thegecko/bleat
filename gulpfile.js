@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 var jshint = require('gulp-jshint');
-var uglify = require('gulp-uglifyjs');
+var uglify = require('gulp-uglify');
+var rename = require('gulp-rename');
 
 var apis = ['classic', 'web-bluetooth'];
 var adapters = ['noble', 'evothings'];
@@ -11,26 +12,26 @@ gulp.task('lint', function() {
         .pipe(jshint.reporter('default'));
 });
 
-gulp.task('release', function() {
-    apis.forEach(api => {
-        adapters.forEach(adapter => {
-            minify(api, adapter);
-        });
-    });
-});
-
 function minify(api, adapter) {
     return gulp.src([
             'dist/bluetooth.helpers.js',
             'dist/api.' + api + '.js',
             'dist/adapter.' + adapter + '.js'
         ])
-        .pipe(uglify(api + '.' + adapter + '.min.js', {
+        .pipe(uglify({
             output: {
                 comments: /@license/
             }
         }))
+        .pipe(rename(api + '.' + adapter + '.min.js'))
         .pipe(gulp.dest('dist'));
 }
 
-gulp.task('default', ['lint', 'release']);
+gulp.task('release', gulp.parallel(
+    apis.map(api => gulp.parallel(
+        adapters.map(adapter => () =>
+            minify(api, adapter)))
+        )
+    )
+);
+gulp.task('default', gulp.series(['lint', 'release']));
