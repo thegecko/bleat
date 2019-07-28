@@ -1,7 +1,7 @@
 var gulp = require('gulp');
 var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
-var rename = require('gulp-rename');
+var concat = require('gulp-concat');
 
 var apis = ['classic', 'web-bluetooth'];
 var adapters = ['noble', 'evothings'];
