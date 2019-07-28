@@ -23,7 +23,7 @@ function minify(api, adapter) {
                 comments: /@license/
             }
         }))
-        .pipe(rename(api + '.' + adapter + '.min.js'))
+        .pipe(concat(api + '.' + adapter + '.min.js'))
         .pipe(gulp.dest('dist'));
 }
 
